@@ -93,6 +93,10 @@ class StaffProfileTextFields(models.Model):
 
 class Production(models.Model): # View page
     works = models.ForeignKey(Works)
+    associated_groups = models.ForeignKey(GroupType)
+    date_start = models.DateField()
+    date_end = models.DateField()
+    production_blurb = models.TextField()
     
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production)
