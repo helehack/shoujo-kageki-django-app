@@ -22,40 +22,48 @@ class ProfileTextType(models.Model):
 class TriggerType(models.Model):
     type = models.CharField(max_length=20) # RAPE, GUNS, SEX, FUN, OTHER
 
-class Genres(models.Model):
+class Genre(models.Model):
     type = models.CharField(max_length=20)
 
-class Venues(models.Model):
+class Venue(models.Model):
     type = models.CharField(max_length=20)
 
-class Geimei(models.Model): # TODO: address The Takigawa Sueko Problem
-    role = models.ForeignKey(RoleType)
-    geimei = models.CharField(max_length=255)
-    geimei_reading = models.CharField(max_length=255)
-    geimei_romaji = models.CharField(max_length=255)
+class CitationInfo(models.Model):
+    publication_name = models.CharField(max_length=255)
+    publication_author = models.CharField(max_length=255, blank=True)
+    publication_date = models.DateField(blank=True)
+    publication_ISBN = models.CharField(max_length=255, blank=True)
+    publication_URL = models.CharField(max_length=255, blank=True)
+
+class StageName(models.Model):
+    name = models.CharField(max_length=255)
+    reading = models.CharField(max_length=255)
+    romaji = models.CharField(max_length=255)
     suffix = models.CharField(max_length=10, blank=True) # prefer Chinese over Arabic numerals because these are Japanese Traditional Arts(tm)
+    associated_staff_member = models.ForeignKey('theatre_info.StaffMember')
 
-    models.UniqueConstraint(fields=['geimei', 'suffix'])
+    class Meta:
+        constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix']) ]
 
-class Works(models.Model): # I wish Sakuhin had a better English equivilant
-    work_name = models.CharField(max_length=255)
-    work_name_reading = models.CharField(max_length=255)
-    work_name_romaji = models.CharField(max_length=255)
-    work_type = models.ForeignKey(WorkType)
-    work_genre = models.ManyToManyField(Genres, null=True)
-    """ will create new NamedRoles entries that will automatically copy everything over from the source work with some reference to original roles... 
-    need to be able to display on a chart with previous versions, so need a field for NamedRoles to correlate (parent_character) """
+class Work(models.Model): # I wish Sakuhin had a better English equivilant
+    name = models.CharField(max_length=255)
+    reading = models.CharField(max_length=255)
+    romaji = models.CharField(max_length=255)
+    type = models.ForeignKey(WorkType)
+    genre = models.ManyToManyField(Genre, null=True)
+    """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
+    need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
     parent_work = models.ForeignKey('self', null=True)
     trigger_warnings = models.ManyToManyField(TriggerType, null=True)
 
-class WorkTextFields(models.Model):
-    work = models.ForeignKey(Works)
-    work_text_type = models.ForeignKey(WorkTextType)
+class WorkTextField(models.Model):
+    work = models.ForeignKey(Work)
+    text_type = models.ForeignKey(WorkTextType)
     is_in_Japanese = models.BooleanField() # messy temporary solution -- optimally, the canonical data stored on the models is in Japanese, but...
     info = models.TextField()
 
-class NamedRoles(models.Model):
-    work = models.ForeignKey(Works)
+class NamedRole(models.Model):
+    work = models.ForeignKey(Work)
     role_type = models.ForeignKey(RoleType)
 
     # if role_type.is_onstage_role:
@@ -75,49 +83,46 @@ class StaffMember(models.Model):
     # add some kind of canonical_name used for URL? For the Takigawas we currently do hatsubutai year but birth year seems more widely applicable... 
     birthdate = models.DateField()
     birthplace = models.CharField(max_length=255)
-    honmyou = models.CharField(max_length=255, blank=True)
-    canonical_geimei = models.OneToOneField(Geimei)
-    associated_geimei = models.ForeignKey(Geimei)
+    given_name = models.CharField(max_length=255, blank=True)
+    canonical_stage_name = models.OneToOneField(StageName)
 
 class StaffProfileTextFields(models.Model):
+    associated_staff_member = models.ForeignKey(StaffMember)
     # Otome stuff or other trivia, CITED, even if not all displayed on front end. From "set list" of translated/able fields with .po strings for content
-    profileTextType = models.ForeignKey(ProfileTextType)
-    originalText = models.CharField(max_length=255)
+    profile_text_type = models.ForeignKey(ProfileTextType)
+    original_text = models.CharField(max_length=255)
     is_official_Hankyu_source = models.BooleanField()
-    publicationName = models.CharField(max_length=255)
-    publicationAuthor = models.CharField(max_length=255)
-    publicationDate = models.DateField(blank=True)
-    publicationISBN = models.CharField(max_length=255, blank=True)
-    publicationURL = models.CharField(max_length=255, blank=True)
-    datetimeAdded = models.DateTimeField() # Apparently it's better to overload save() for this rather than doing auto_now?
+    datetime_added = models.DateTimeField() # Apparently it's better to overload save() for this rather than doing auto_now?
+    citation = models.ManyToManyField(CitationInfo)
 
 class Production(models.Model): # View page
-    works = models.ForeignKey(Works)
-    associated_groups = models.ForeignKey(GroupType)
+    works = models.ManyToManyField(Work)
+    associated_groups = models.ManyToManyField(GroupType)
     date_start = models.DateField()
     date_end = models.DateField()
     production_blurb = models.TextField()
     
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production)
-    venue = models.ForeignKey(Venues)
+    venue = models.ForeignKey(Venue)
     date_start = models.DateField()
     date_end = models.DateField()
 
 class Performance(models.Model):
-    work = models.ForeignKey(Works)
-    date_start = models.DateField()
-    date_end = models.DateField()
+    work = models.ForeignKey(Work)
+    date_start = models.DateField(null=True)
+    date_end = models.DateField(null=True)
 
-class CastMembers(models.Model):
+class CastMember(models.Model):
     performance = models.ForeignKey(Performance)
-    geimei = models.ForeignKey(Geimei)
-    role = models.ForeignKey(NamedRoles)
+    stage_name = models.ForeignKey(StageName)
+    role = models.ForeignKey(NamedRole)
 
 class GroupMembership(models.Model):
-    geimei = models.ForeignKey(Geimei)
+    stage_name = models.ForeignKey(StageName)
     date_start = models.DateField()
     date_start_production_run = models.ForeignKey(ProductionRun)
     date_end = models.DateField(null=True)
     date_end_production_run = models.ForeignKey(ProductionRun, null=True)
     associated_group = models.ForeignKey(GroupType)
+    gender_role = models.CharField( max_length=10, choices= [ 'otokoyaku', 'musumeyaku', 'both', 'n/a'], default='n/a' )
