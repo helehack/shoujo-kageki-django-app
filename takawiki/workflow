@@ -1,0 +1,13 @@
+Fill In Enum Tables
+-> Add Stage Name
+    if(associated StaffMember does not exist)
+        create associated StaffMember
+        set 1:1 StaffMember<->Stage Name canonical_stage_name
+    set StageName->StaffMember associated_staff_member
+-> Add Work
+-> Add NamedRole(s)
+-> Add Production
+-> Add ProductionRun
+-> Add Performance
+-> Add GroupMembership
+-> Add CastMember

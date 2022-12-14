@@ -11,25 +11,27 @@ class RoleEnum(models.Model):
 class GroupEnum(models.Model):
     enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, OG, GUEST
 
-class WorkEnum(models.Model):
+class WorkEnum(models.Model): # this needs a better name WorkTypeEnum? I'm trying to stay away from "type". Ugh.
     enum = models.CharField(max_length=20) # REVUE, ONE_ACT_PLAY, TWO_ACT_PLAY, SPECIAL, OTHER
 
 class WorkTextEnum(models.Model):
     enum = models.CharField(max_length=20) # PLOT_SUMMARY, TRIGGER_INFORMATION, TRIVIA
 
 class ProfileTextEnum(models.Model):
-    enum = models.CharField(max_length=20) 
+    enum = models.CharField(max_length=20) # Otome stuff (NAME_ORIGIN, FAV_COLOR, FAV_FLOWER, HOBBIES) + TRIVIA section at bottom of page
 
 class TriggerEnum(models.Model):
     enum = models.CharField(max_length=20) # RAPE, NONCON, GUNS, OTHER, etc
 
-class Genre(models.Model):
+class GenreEnum(models.Model):
     enum = models.CharField(max_length=20) # LATIN, CLASSIC, etc
 
-class Venue(models.Model):
+class VenueEnum(models.Model):
     enum = models.CharField(max_length=20) # 宝塚大劇場, 東京宝塚劇場
 
-class ChangelogInfo(models.Model):
+class ChangelogInfo(models.Model): 
+    pass
+    """ I'm not sure how much of this is already handled internally in admin, but I definitely want to associate additional fields with it.
     editor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     publication_name = models.CharField(max_length=255)
     publication_author = models.CharField(max_length=255, blank=True)
@@ -37,14 +39,14 @@ class ChangelogInfo(models.Model):
     publication_ISBN_ASIN = models.CharField(max_length=255, blank=True)
     publication_URL = models.CharField(max_length=255, blank=True)
     time_updated = models.DateTimeField()
-    # fields_updated = no idea how to manage this one
+    fields_updated = no idea how to manage this one """
 
 class StageName(models.Model):
     name = models.CharField(max_length=255)
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
     suffix = models.CharField(max_length=10, blank=True) # prefer Chinese over Arabic numerals because these are Japanese Traditional Arts(tm)
-    associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT)
+    associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT, null=True)
 
     class Meta:
         constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
@@ -54,7 +56,7 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
     enum = models.ForeignKey(WorkEnum, on_delete=models.PROTECT)
-    genre = models.ManyToManyField(Genre)
+    genre = models.ManyToManyField(GenreEnum)
     """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
     need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
     parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
@@ -64,7 +66,7 @@ class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
     text_enum = models.ForeignKey(WorkTextEnum, on_delete=models.PROTECT)
     is_in_Japanese = models.BooleanField() # messy temporary solution -- optimally, the canonical data stored on the models is in Japanese, but...
-    info = models.TextField()
+    text = models.TextField()
 
 class NamedRole(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -84,8 +86,8 @@ class NamedRole(models.Model):
     parent_character = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
 
 class StaffMember(models.Model):
-    birthdate = models.DateField()
-    birthplace = models.CharField(max_length=255)
+    birthdate = models.DateField(null=True)
+    birthplace = models.CharField(max_length=255, blank=True)
     given_name = models.CharField(max_length=255, blank=True)
     canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
 
@@ -95,7 +97,6 @@ class StaffProfileTextFields(models.Model):
     profile_text_enum = models.ForeignKey(ProfileTextEnum, on_delete=models.PROTECT)
     original_text = models.CharField(max_length=255)
     is_official_Hankyu_source = models.BooleanField()
-    datetime_added = models.DateTimeField() # Apparently it's better to overload save() for this rather than doing auto_now?
 
 class Production(models.Model): # View page
     works = models.ManyToManyField(Work)
@@ -106,7 +107,7 @@ class Production(models.Model): # View page
     
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
-    venue = models.ForeignKey(Venue, on_delete=models.PROTECT)
+    venue = models.ForeignKey(VenueEnum, on_delete=models.PROTECT)
     date_start = models.DateField()
     date_end = models.DateField()
 
@@ -114,7 +115,8 @@ class Performance(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
     date_start = models.DateField(null=True)
     date_end = models.DateField(null=True)
-    special_venue = models.CharField(max_length=255, null=True, blank=True) # for encapsulating national tour information
+    tour_venue = models.CharField(max_length=255, null=True, blank=True) # for encapsulating national tour information
+    associated_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
 
 class CastMember(models.Model):
     performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
@@ -124,8 +126,14 @@ class CastMember(models.Model):
 class GroupMembership(models.Model):
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     date_start = models.DateField()
-    date_start_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT, related_name='group_join')
+    date_start_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, related_name='group_join') # if we don't know this info, there will be a dummy Show/Production/ProductionRun/Performance
     date_end = models.DateField(null=True)
-    date_end_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT, null=True, related_name='group_depart')
+    date_end_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, null=True, related_name='group_depart')
     associated_group = models.ForeignKey(GroupEnum, on_delete=models.PROTECT)
     gender_role = models.CharField( max_length=2, choices=[('OY', 'otokoyaku'), ('MY', 'musumeyaku'), ('BT', 'both'), ('NA', 'not applicable'),], default='NA' )
+
+""" TODO: 
+ - Photos -- headshots for staff members and chirashi/header for exhibitions. Look into library options. Easy Thumbnails? 
+ - Glossary? Might be a separate app; pain in the ass to localize. Situation normal.
+ - OH YEAH LOCALIZATION associated translation tables by domain; locale-slug-associated field (enums should be useful for this)-text?
+"""
