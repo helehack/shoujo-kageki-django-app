@@ -47,18 +47,18 @@ class StageName(models.Model):
     associated_staff_member = models.ForeignKey('theatre_info.StaffMember', on_delete=models.PROTECT)
 
     class Meta:
-        constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix']) ]
+        constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
 
 class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
     enum = models.ForeignKey(WorkEnum, on_delete=models.PROTECT)
-    genre = models.ManyToManyField(Genre, on_delete=models.PROTECT, null=True)
+    genre = models.ManyToManyField(Genre, null=True)
     """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
     need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
     parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
-    trigger_warnings = models.ManyToManyField(TriggerEnum, on_delete=models.PROTECT, null=True)
+    trigger_warnings = models.ManyToManyField(TriggerEnum, null=True)
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -87,7 +87,7 @@ class StaffMember(models.Model):
     birthdate = models.DateField()
     birthplace = models.CharField(max_length=255)
     given_name = models.CharField(max_length=255, blank=True)
-    canonical_stage_name = models.OneToOneField(StageName)
+    canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
 
 class StaffProfileTextFields(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
@@ -96,11 +96,10 @@ class StaffProfileTextFields(models.Model):
     original_text = models.CharField(max_length=255)
     is_official_Hankyu_source = models.BooleanField()
     datetime_added = models.DateTimeField() # Apparently it's better to overload save() for this rather than doing auto_now?
-    citation = models.ManyToManyField(ChangelogInfo, on_delete=models.PROTECT)
 
 class Production(models.Model): # View page
-    works = models.ManyToManyField(Work, on_delete=models.PROTECT)
-    associated_groups = models.ManyToManyField(GroupEnum, on_delete=models.PROTECT)
+    works = models.ManyToManyField(Work)
+    associated_groups = models.ManyToManyField(GroupEnum)
     date_start = models.DateField()
     date_end = models.DateField()
     production_blurb = models.TextField()
