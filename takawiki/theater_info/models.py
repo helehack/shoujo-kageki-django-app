@@ -44,7 +44,7 @@ class StageName(models.Model):
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
     suffix = models.CharField(max_length=10, blank=True) # prefer Chinese over Arabic numerals because these are Japanese Traditional Arts(tm)
-    associated_staff_member = models.ForeignKey('theatre_info.StaffMember', on_delete=models.PROTECT)
+    associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT)
 
     class Meta:
         constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
@@ -54,11 +54,11 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
     enum = models.ForeignKey(WorkEnum, on_delete=models.PROTECT)
-    genre = models.ManyToManyField(Genre, null=True)
+    genre = models.ManyToManyField(Genre)
     """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
     need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
     parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
-    trigger_warnings = models.ManyToManyField(TriggerEnum, null=True)
+    trigger_warnings = models.ManyToManyField(TriggerEnum)
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -124,8 +124,8 @@ class CastMember(models.Model):
 class GroupMembership(models.Model):
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     date_start = models.DateField()
-    date_start_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
+    date_start_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT, related_name='group_join')
     date_end = models.DateField(null=True)
-    date_end_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT, null=True)
+    date_end_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT, null=True, related_name='group_depart')
     associated_group = models.ForeignKey(GroupEnum, on_delete=models.PROTECT)
-    gender_role = models.CharField( max_length=10, choices= [ 'otokoyaku', 'musumeyaku', 'both', 'n/a'], default='n/a' )
+    gender_role = models.CharField( max_length=2, choices=[('OY', 'otokoyaku'), ('MY', 'musumeyaku'), ('BT', 'both'), ('NA', 'not applicable'),], default='NA' )
