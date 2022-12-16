@@ -79,11 +79,18 @@ class NamedRole(models.Model):
     There are usually more otoko roles and musumeyaku almost never play them unless they're small children. Otokoyaku sometimes play female roles.
     You can still pick whichever actor, but if it doesn't line up with their "usual" role assignment, we usually display it front end. """
     is_otoko = models.BooleanField(null=True) 
-    is_in_Japanese = models.BooleanField(null=True) # messy temporary solution -- optimally, the canonical data stored on the models is in Japanese, but...
+    is_in_Japanese = models.BooleanField() # messy temporary solution -- optimally, the canonical data stored on the models is in Japanese, but...
     character_name = models.CharField(max_length=255, null=True)
     character_name_reading = models.CharField(max_length=255, null=True)
     character_subtitle = models.TextField(null=True)
     parent_character = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
+
+class WorkScene(models.Model):
+    associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)
+    associated_roles = models.ManyToManyField(NamedRole) # should include choreographer + composer when we can!
+    parent_scene = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
+    description = models.TextField(blank=True)
+    is_in_Japanese = models.BooleanField()
 
 class StaffMember(models.Model):
     birthdate = models.DateField(null=True)
