@@ -11,7 +11,7 @@ class RoleEnum(models.Model):
 class GroupEnum(models.Model):
     enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, SENKA, OG, GUEST
 
-class WorkEnum(models.Model): # this needs a better name WorkTypeEnum? I'm trying to stay away from "type". Ugh.
+class WorkCategoryEnum(models.Model):
     enum = models.CharField(max_length=20) # REVUE, ONE_ACT_PLAY, TWO_ACT_PLAY, SPECIAL, OTHER
 
 class WorkTextEnum(models.Model):
@@ -55,7 +55,7 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
-    enum = models.ForeignKey(WorkEnum, on_delete=models.PROTECT)
+    enum = models.ForeignKey(WorkCategoryEnum, on_delete=models.PROTECT)
     genre = models.ManyToManyField(GenreEnum)
     """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
     need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
@@ -98,6 +98,7 @@ class StaffMember(models.Model):
     birth_prefecture = models.CharField(max_length=255, blank=True)
     birth_city = models.CharField(max_length=255, blank=True)
     given_name = models.CharField(max_length=255, blank=True)
+    given_name_reading = models.CharField(max_length=255, blank=True)
     given_name_romaji = models.CharField(max_length=255, blank=True)
     canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
 

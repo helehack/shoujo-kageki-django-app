@@ -6,8 +6,16 @@ Fill In Enum Tables
     set StageName->StaffMember associated_staff_member
 -> Add Work
 -> Add NamedRole(s)
+-> Add WorkScene(s)
 -> Add Production
 -> Add ProductionRun
 -> Add Performance
 -> Add GroupMembership
 -> Add CastMember
+
+
+potential includes:
+- Easy Thumbnails https://easy-thumbnails.readthedocs.io/en/latest/
+- Simple History https://github.com/jazzband/django-simple-history
+    I really like the "comments" field -- this + the ability to upload an image
+    might be the solution to the changelog/citation conundrum. 
