@@ -95,6 +95,7 @@ class WorkScene(models.Model):
 
 class StaffMember(models.Model):
     birthdate = models.DateField(null=True)
+    deathdate = models.DateField(null=True, blank=True)
     birth_country = models.CharField(max_length=255, blank=True, default='日本国')
     birth_prefecture = models.CharField(max_length=255, blank=True)
     birth_city = models.CharField(max_length=255, blank=True)
