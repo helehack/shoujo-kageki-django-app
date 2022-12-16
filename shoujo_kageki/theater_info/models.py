@@ -9,9 +9,9 @@ class RoleEnum(models.Model):
     is_onstage_role = models.BooleanField() # add'l fields for named_roles
 
 class GroupEnum(models.Model):
-    enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, OG, GUEST
+    enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, SENKA, OG, GUEST
 
-class WorkEnum(models.Model): # this needs a better name WorkTypeEnum? I'm trying to stay away from "type". Ugh.
+class WorkCategoryEnum(models.Model):
     enum = models.CharField(max_length=20) # REVUE, ONE_ACT_PLAY, TWO_ACT_PLAY, SPECIAL, OTHER
 
 class WorkTextEnum(models.Model):
@@ -46,7 +46,7 @@ class StageName(models.Model):
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
     suffix = models.CharField(max_length=10, blank=True) # prefer Chinese over Arabic numerals because these are Japanese Traditional Arts(tm)
-    associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT, null=True)
+    associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
@@ -55,7 +55,7 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
-    enum = models.ForeignKey(WorkEnum, on_delete=models.PROTECT)
+    enum = models.ForeignKey(WorkCategoryEnum, on_delete=models.PROTECT)
     genre = models.ManyToManyField(GenreEnum)
     """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
     need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
@@ -85,10 +85,23 @@ class NamedRole(models.Model):
     character_subtitle = models.TextField(null=True)
     parent_character = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
 
+class WorkScene(models.Model):
+    associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)
+    associated_roles = models.ManyToManyField(NamedRole) # should include choreographer + composer when we can!
+    parent_scene = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    is_in_Japanese = models.BooleanField(blank=True, null=True)
+
 class StaffMember(models.Model):
     birthdate = models.DateField(null=True)
-    birthplace = models.CharField(max_length=255, blank=True)
+    deathdate = models.DateField(null=True, blank=True)
+    birth_country = models.CharField(max_length=255, blank=True, default='日本国')
+    birth_prefecture = models.CharField(max_length=255, blank=True)
+    birth_city = models.CharField(max_length=255, blank=True)
     given_name = models.CharField(max_length=255, blank=True)
+    given_name_reading = models.CharField(max_length=255, blank=True)
+    given_name_romaji = models.CharField(max_length=255, blank=True)
     canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
 
 class StaffProfileTextFields(models.Model):
