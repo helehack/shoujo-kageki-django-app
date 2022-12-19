@@ -8,30 +8,51 @@ class RoleEnum(models.Model):
     enum = models.CharField(max_length=20) # AUTHOR, CHOREOGRAPHER, COSTUME_DESIGNER, DIRECTOR, COMPOSER, CONDUCTOR, MUSICIAN, ACTOR
     is_onstage_role = models.BooleanField() # add'l fields for named_roles
 
+    def __str__(self):
+        return self.enum
+
 class GroupEnum(models.Model):
     enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, SENKA, OG, GUEST
+
+    def __str__(self):
+        return self.enum
 
 class WorkCategoryEnum(models.Model):
     enum = models.CharField(max_length=20) # REVUE, ONE_ACT_PLAY, TWO_ACT_PLAY, SPECIAL, OTHER
 
+    def __str__(self):
+        return self.enum
+
 class WorkTextEnum(models.Model):
     enum = models.CharField(max_length=20) # PLOT_SUMMARY, TRIGGER_INFORMATION, TRIVIA
+
+    def __str__(self):
+        return self.enum
 
 class ProfileTextEnum(models.Model):
     enum = models.CharField(max_length=20) # Otome stuff (NAME_ORIGIN, FAV_COLOR, FAV_FLOWER, HOBBIES) + TRIVIA section at bottom of page
 
+    def __str__(self):
+        return self.enum
 class TriggerEnum(models.Model):
     enum = models.CharField(max_length=20) # RAPE, NONCON, GUNS, OTHER, etc
 
+    def __str__(self):
+        return self.enum
 class GenreEnum(models.Model):
     enum = models.CharField(max_length=20) # LATIN, CLASSIC, etc
 
+    def __str__(self):
+        return self.enum
 class VenueEnum(models.Model):
     enum = models.CharField(max_length=20) # 宝塚大劇場, 東京宝塚劇場
 
+    def __str__(self):
+        return self.enum
 class ChangelogInfo(models.Model): 
     pass
-    """ I'm not sure how much of this is already handled internally in admin, but I definitely want to associate additional fields with it.
+    """ 
+    TODO: Look at some of the jazzband projects for this sort of thing, such as django-simple-history and django-auditlog.
     editor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     publication_name = models.CharField(max_length=255)
     publication_author = models.CharField(max_length=255, blank=True)
@@ -50,17 +71,20 @@ class StageName(models.Model):
 
     class Meta:
         constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
+    
+    def __str__(self):
+        return (self.name + " " + self.romaji)
 
 class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
-    enum = models.ForeignKey(WorkCategoryEnum, on_delete=models.PROTECT)
-    genre = models.ManyToManyField(GenreEnum)
+    work_category = models.ForeignKey(WorkCategoryEnum, on_delete=models.PROTECT)
+    genre = models.ManyToManyField(GenreEnum, blank=True)
     """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
     need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
-    parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
-    trigger_warnings = models.ManyToManyField(TriggerEnum)
+    parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
+    trigger_warnings = models.ManyToManyField(TriggerEnum, blank=True)
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -103,6 +127,9 @@ class StaffMember(models.Model):
     given_name_reading = models.CharField(max_length=255, blank=True)
     given_name_romaji = models.CharField(max_length=255, blank=True)
     canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return str(self.canonical_stage_name) + " (" + self.given_name + " " + self.given_name_romaji + ")" 
 
 class StaffProfileTextFields(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
