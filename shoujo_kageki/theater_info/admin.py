@@ -29,16 +29,13 @@ class NamedRoleInline(admin.StackedInline):
     model = NamedRole
     extra = 1
 
-class WorkSceneInline(admin.StackedInline):
-    model = WorkScene
-    extra = 1
-
 class WorkAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Work Name Information (Japanese Please!)',{'fields':['name','reading','romaji']}),
         ('Other Basic Information',{'fields':['parent_work','work_category','genre','trigger_warnings']}),
+        ('Based on...',{'fields':['source_material','source_author','source_material_type']}),
     ]
-    inlines = [WorkTextInline, NamedRoleInline, WorkSceneInline]
+    inlines = [WorkTextInline, NamedRoleInline]
 
 class ProductionRunInline(admin.StackedInline):
     model = ProductionRun
@@ -46,8 +43,8 @@ class ProductionRunInline(admin.StackedInline):
 class PerformanceInline(admin.StackedInline):
     model = Performance
     extra = 1
-class CastMemberInline(admin.StackedInline):
-    model = CastMember
+class PerformanceCastMemberInline(admin.StackedInline):
+    model = PerformanceCastMember
     extra = 1
 
 class ProductionAdmin(admin.ModelAdmin):
@@ -61,4 +58,4 @@ admin.site.register(StageName, StageNameAdmin)
 admin.site.register(StaffMember, StaffMemberAdmin)
 admin.site.register(Work, WorkAdmin)
 admin.site.register(Production, ProductionAdmin)
-admin.site.register([RoleEnum, GroupEnum, WorkCategoryEnum, WorkTextEnum, ProfileTextEnum, TriggerEnum, GenreEnum, VenueEnum], EnumAdmin)
+admin.site.register([GroupEnum, TriggerEnum, GenreEnum, VenueEnum, SourceMaterialEnum], EnumAdmin)

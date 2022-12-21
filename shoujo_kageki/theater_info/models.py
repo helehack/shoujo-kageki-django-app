@@ -1,54 +1,44 @@
 from django.db import models
 from django.utils.timezone import get_current_timezone, make_aware, now
-from django.utils.translation import gettext_lazy as _, to_locale
+from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+class Language(models.TextChoices):
+    ENGLISH = 'en-US','English'
+    JAPANESE = 'ja-JP','日本語'
 
 # custom ENUM tables essentially #
-class RoleEnum(models.Model):
-    enum = models.CharField(max_length=20) # AUTHOR, CHOREOGRAPHER, COSTUME_DESIGNER, DIRECTOR, COMPOSER, CONDUCTOR, MUSICIAN, ACTOR
-    is_onstage_role = models.BooleanField() # add'l fields for named_roles
-
-    def __str__(self):
-        return self.enum
-
 class GroupEnum(models.Model):
     enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, SENKA, OG, GUEST
 
     def __str__(self):
         return self.enum
 
-class WorkCategoryEnum(models.Model):
-    enum = models.CharField(max_length=20) # REVUE, ONE_ACT_PLAY, TWO_ACT_PLAY, SPECIAL, OTHER
-
-    def __str__(self):
-        return self.enum
-
-class WorkTextEnum(models.Model):
-    enum = models.CharField(max_length=20) # PLOT_SUMMARY, TRIGGER_INFORMATION, TRIVIA
-
-    def __str__(self):
-        return self.enum
-
-class ProfileTextEnum(models.Model):
-    enum = models.CharField(max_length=20) # Otome stuff (NAME_ORIGIN, FAV_COLOR, FAV_FLOWER, HOBBIES) + TRIVIA section at bottom of page
-
-    def __str__(self):
-        return self.enum
 class TriggerEnum(models.Model):
     enum = models.CharField(max_length=20) # RAPE, NONCON, GUNS, OTHER, etc
 
     def __str__(self):
         return self.enum
+
 class GenreEnum(models.Model):
     enum = models.CharField(max_length=20) # LATIN, CLASSIC, etc
 
     def __str__(self):
         return self.enum
+
 class VenueEnum(models.Model):
     enum = models.CharField(max_length=20) # 宝塚大劇場, 東京宝塚劇場
 
     def __str__(self):
         return self.enum
+
+class SourceMaterialEnum(models.Model):
+    enum = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.enum
+
 class ChangelogInfo(models.Model): 
     pass
     """ 
@@ -75,48 +65,6 @@ class StageName(models.Model):
     def __str__(self):
         return (self.name + " " + self.romaji)
 
-class Work(models.Model): # I wish Sakuhin had a better English equivilant
-    name = models.CharField(max_length=255)
-    reading = models.CharField(max_length=255)
-    romaji = models.CharField(max_length=255)
-    work_category = models.ForeignKey(WorkCategoryEnum, on_delete=models.PROTECT)
-    genre = models.ManyToManyField(GenreEnum, blank=True)
-    """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
-    need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
-    parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
-    trigger_warnings = models.ManyToManyField(TriggerEnum, blank=True)
-
-class WorkTextField(models.Model):
-    work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    text_enum = models.ForeignKey(WorkTextEnum, on_delete=models.PROTECT)
-    is_in_Japanese = models.BooleanField() # messy temporary solution -- optimally, the canonical data stored on the models is in Japanese, but...
-    text = models.TextField()
-
-class NamedRole(models.Model):
-    work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    role_enum = models.ForeignKey(RoleEnum, on_delete=models.PROTECT)
-
-    # if role_enum.is_onstage_role:
-    is_lead = models.BooleanField(null=True)
-    """maybe not the best way to handle this? It's to determine male/female lead but also to help with auto-filling cast lists.
-    One could list all of the otokoyaku first if it's a male role assignment. If is_otoko then sort actor list by alphabet then otoko, opposite for musume.
-    There are usually more otoko roles and musumeyaku almost never play them unless they're small children. Otokoyaku sometimes play female roles.
-    You can still pick whichever actor, but if it doesn't line up with their "usual" role assignment, we usually display it front end. """
-    is_otoko = models.BooleanField(null=True) 
-    is_in_Japanese = models.BooleanField(null=True) # messy temporary solution -- optimally, the canonical data stored on the models is in Japanese, but...
-    character_name = models.CharField(max_length=255, null=True)
-    character_name_reading = models.CharField(max_length=255, null=True)
-    character_subtitle = models.TextField(null=True)
-    parent_character = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
-
-class WorkScene(models.Model):
-    associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    associated_roles = models.ManyToManyField(NamedRole) # should include choreographer + composer when we can!
-    parent_scene = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
-    title = models.CharField(max_length=255, blank=True)
-    description = models.TextField(blank=True)
-    is_in_Japanese = models.BooleanField(blank=True, null=True)
-
 class StaffMember(models.Model):
     birthdate = models.DateField(null=True)
     deathdate = models.DateField(null=True, blank=True)
@@ -133,10 +81,91 @@ class StaffMember(models.Model):
 
 class StaffProfileTextFields(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
-    # Otome stuff or other trivia, CITED, even if not all displayed on front end. From "set list" of translated/able fields with .po strings for content
-    profile_text_enum = models.ForeignKey(ProfileTextEnum, on_delete=models.PROTECT)
+    profile_text_type = models.CharField(max_length=15, choices=[
+        ('blood_type','Blood Type'),
+        ('nickname','Nickname'),
+        ('flower','Favorite Flower'),
+        ('food','Favorite Food'),
+        ('color','Favorite Color'),
+        ('hobby','Hobby'),
+        ('collection','Collection'),
+        ('talent','Special Talent'),
+        ('name_origin','Origin of Stage Name'),
+        ('role','Favorite Role'),
+        ('like_to_play','Would Like to Try Playing'),
+        ('trivia','Trivia'),
+        ('social','Social Media/Website'),
+        ('other','Other'),
+    ], default='other')
     original_text = models.CharField(max_length=255)
-    is_official_Hankyu_source = models.BooleanField()
+    is_in_Japanese = models.BooleanField(default='False')
+    is_current_data = models.BooleanField(default='True')
+    source_material = models.CharField(max_length=255, default='Unknown')
+    source_year = models.CharField(max_length=4, default='None')
+
+    def __str__(self):
+        return self.profile_text_type
+
+class Work(models.Model): # I wish Sakuhin had a better English equivilant
+    name = models.CharField(max_length=255)
+    reading = models.CharField(max_length=255)
+    romaji = models.CharField(max_length=255)
+    work_category = models.CharField(max_length=15, choices=[
+        ('one_act', 'One-Act Play'),
+        ('two_act', 'Two-Act Play'),
+        ('revue', 'Revue'),
+        ('dinner_show', 'Dinner Show'),
+        ('music_salon', 'Music Salon'),
+        ('buyoukai', 'Buyoukai'),
+        ('tmp_tca', 'TMP/TCA/Mirror Ball Special'),
+        ('other_special', 'Other Special'),
+        ('other', 'Other')
+    ])
+    genre = models.ManyToManyField(GenreEnum, blank=True)
+    # nihonmono timeline fields?
+    """ will create new NamedRole entries that will automatically copy everything over from the source work with some reference to original roles... 
+    need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
+    trigger_warnings = models.ManyToManyField(TriggerEnum, blank=True)
+    parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
+    source_material = models.CharField(max_length=255, blank=True)
+    source_author = models.CharField(max_length=255, blank=True)
+    source_material_type = models.ManyToManyField(SourceMaterialEnum, blank=True)
+
+    def __str__(self):
+        return self.name + " " + self.romaji
+
+class WorkStaff(models.Model):
+    work = models.ForeignKey(Work, on_delete=models.PROTECT)
+    work_staff_role = models.CharField(max_length=15, choices=[
+        ('writer', 'Writer'), ('choreographer', 'Choreographer'),('composer','Composer')
+    ])
+    staff_stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+
+class WorkTextField(models.Model):
+    work = models.ForeignKey(Work, on_delete=models.PROTECT)
+    language = models.CharField(max_length=5, choices=Language.choices)
+    text_type = models.CharField(max_length=15, choices=[
+        ('plot_summary','Plot Summary'),
+        ('trigger_info','Additional Trigger Information'),
+        ('trivia','Trivia'),
+    ])
+    text = models.TextField()
+
+class NamedRole(models.Model):
+    work = models.ForeignKey(Work, on_delete=models.PROTECT)
+    is_lead = models.BooleanField(null=True)
+    is_otokoyaku_role = models.BooleanField(null=True) 
+    jp_character_name = models.CharField(max_length=255, blank=True)
+    character_name_reading = models.CharField(max_length=255, blank=True)
+    character_name_romaji = models.CharField(max_length=255)
+    character_subtitle = models.TextField(null=True, blank=True)
+    parent_character = models.ForeignKey('self', on_delete=models.PROTECT, blank=True, null=True)
+
+    def __str__(self):
+        if(self.jp_character_name):
+            return self.jp_character_name + " " + self.character_name_romaji
+        
+        return self.character_name_romaji
 
 class Production(models.Model): # View page
     works = models.ManyToManyField(Work)
@@ -158,10 +187,25 @@ class Performance(models.Model):
     tour_venue = models.CharField(max_length=255, null=True, blank=True) # for encapsulating national tour information
     associated_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
 
-class CastMember(models.Model):
+class PerformanceCastMember(models.Model):
     performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     role = models.ForeignKey(NamedRole, on_delete=models.PROTECT)
+
+class PerformanceStaff(models.Model):
+    production_run = models.ForeignKey(Performance, on_delete=models.PROTECT)
+    stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+    performance_staff_role = models.CharField(max_length=15, choices=[('director','Director'),('conductor','Conductor'),])
+
+class WorkScene(models.Model):
+    associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)
+    associated_work_staff = models.ManyToManyField(WorkStaff)
+    associated_named_roles = models.ManyToManyField(NamedRole)
+    parent_scene = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
+    en_title = models.CharField(max_length=255, blank=True)
+    jp_title = models.CharField(max_length=255, blank=True)
+    en_description = models.TextField(blank=True)
+    jp_description = models.TextField(blank=True)
 
 class GroupMembership(models.Model):
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
@@ -170,7 +214,7 @@ class GroupMembership(models.Model):
     date_end = models.DateField(null=True)
     date_end_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, null=True, related_name='group_depart')
     associated_group = models.ForeignKey(GroupEnum, on_delete=models.PROTECT)
-    gender_role = models.CharField( max_length=2, choices=[('OY', 'otokoyaku'), ('MY', 'musumeyaku'), ('BT', 'both'), ('NA', 'not applicable'),], default='NA' )
+    gender_role = models.CharField( max_length=15, choices=[('otokoyaku', 'otokoyaku'), ('musumeyaku', 'musumeyaku'), ('both', 'both'), ('not_applicable', 'not_applicable'),], default='not_applicable' )
 
 """ TODO: 
  - Photos -- headshots for staff members and chirashi/header for exhibitions. Look into library options. Easy Thumbnails? 
