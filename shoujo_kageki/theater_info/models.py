@@ -193,7 +193,7 @@ class PerformanceCastMember(models.Model):
     role = models.ForeignKey(NamedRole, on_delete=models.PROTECT)
 
 class PerformanceStaff(models.Model):
-    production_run = models.ForeignKey(Performance, on_delete=models.PROTECT)
+    performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     performance_staff_role = models.CharField(max_length=15, choices=[('director','Director'),('conductor','Conductor'),])
 
