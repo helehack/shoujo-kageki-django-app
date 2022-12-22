@@ -10,7 +10,9 @@ class GroupMembershipInline(admin.StackedInline):
 
 class StageNameAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Name Information (Please Input in Japanese)', {'fields': ['name', 'reading', 'romaji', 'suffix']})
+        ('Name Information (Please Input in Japanese)', {'fields': [
+            'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji', 'suffix'
+        ]})
     ]
     inlines = [GroupMembershipInline]
 
@@ -24,7 +26,9 @@ class StaffProfileTextInline(admin.StackedInline):
 
 class StaffMemberAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Vital Statistics (Please Input in Japanese)', {'fields': ['birthdate', 'deathdate', 'birth_country', 'birth_prefecture', 'birth_city', 'given_name', 'given_name_reading', 'given_name_romaji']}),
+        ('Vital Statistics (Please Input in Japanese)', {'fields': [
+            'birthdate', 'deathdate', 'birth_country', 'birth_prefecture', 'birth_city', 'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji'
+        ]}),
         ('Display Stage Name', {'fields': ['canonical_stage_name']})
     ]
     inlines = [StaffProfileTextInline, StageNameInline]

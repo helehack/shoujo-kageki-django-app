@@ -47,62 +47,62 @@ class TroupeRole(models.TextChoices):
     UNKNOWN = 'unknown', _('Unknown')
 
 # custom ENUM tables essentially #
-class GroupEnum(models.Model):
-    enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, SENKA, OG, GUEST
-
-    def __str__(self):
-        return self.enum
-
-class TriggerEnum(models.Model):
-    enum = models.CharField(max_length=20) # RAPE, NONCON, GUNS, OTHER, etc
-
-    def __str__(self):
-        return self.enum
-
-class GenreEnum(models.Model):
-    enum = models.CharField(max_length=20) # LATIN, CLASSIC, etc
-
-    def __str__(self):
-        return self.enum
-
-class VenueEnum(models.Model):
-    enum = models.CharField(max_length=20) # 宝塚大劇場, 東京宝塚劇場
-
-    def __str__(self):
-        return self.enum
-
-class SourceMaterialEnum(models.Model):
+class AnyEnum(models.Model):
     enum = models.CharField(max_length=20)
 
     def __str__(self):
         return self.enum
 
+    class Meta:
+        abstract = True
+
+class GroupEnum(AnyEnum):
+    pass
+
+class TriggerEnum(AnyEnum):
+    pass
+
+class GenreEnum(AnyEnum):
+    pass
+
+class VenueEnum(AnyEnum):
+    pass
+
+class SourceMaterialEnum(AnyEnum):
+    pass
+
 class StageName(models.Model):
-    name = models.CharField(max_length=255)
-    reading = models.CharField(max_length=255)
-    romaji = models.CharField(max_length=255)
-    suffix = models.CharField(max_length=10, blank=True) # prefer Chinese over Arabic numerals because these are Japanese Traditional Arts(tm)
+    surname = models.CharField(max_length=255)
+    surname_reading = models.CharField(max_length=255)
+    surname_romaji = models.CharField(max_length=255)
+    given_name = models.CharField(max_length=255)
+    given_name_reading = models.CharField(max_length=255)
+    given_name_romaji = models.CharField(max_length=255)
+    suffix = models.CharField(max_length=10, blank=True)
     associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
-        constraints = [ models.UniqueConstraint(fields=['romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
+        constraints = [ models.UniqueConstraint(fields=['surname_romaji', 'given_name_romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
     
     def __str__(self):
-        return (self.name + " " + self.romaji)
+        return (self.surname + self.given_name + " " + self.surname_romaji + " " + self.given_name_romaji)
 
 class StaffMember(models.Model):
-    birthdate = models.DateField(null=True)
+    birthdate = models.DateField(null=True, blank=True) # TODO: Solve the bday problem. Break this out into year/mo/date fields?
     deathdate = models.DateField(null=True, blank=True)
     birth_country = models.CharField(max_length=255, blank=True, default='日本国')
     birth_prefecture = models.CharField(max_length=255, blank=True)
     birth_city = models.CharField(max_length=255, blank=True)
+    surname = models.CharField(max_length=255, blank=True)
+    surname_reading = models.CharField(max_length=255, blank=True)
+    surname_romaji = models.CharField(max_length=255, blank=True)
     given_name = models.CharField(max_length=255, blank=True)
     given_name_reading = models.CharField(max_length=255, blank=True)
     given_name_romaji = models.CharField(max_length=255, blank=True)
     canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
 
     def __str__(self):
-        return str(self.canonical_stage_name) + " (" + self.given_name + " " + self.given_name_romaji + ")" 
+        return str(self.canonical_stage_name) + " (" + self.surname + self.given_name + " " + self.surname_romaji + " " + self.given_name_romaji + ")" 
 
 class StaffProfileTextField(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
@@ -187,9 +187,20 @@ class Production(models.Model): # View page
     associated_groups = models.ManyToManyField(GroupEnum)
     # some kind of way to add trivia
 
+    def __str__(self):
+        works_str = ''
+
+        for work in self.works.all():
+            works_str += str(work)
+        
+        return works_str
+
 class ProductionCastMember(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return str(self.stage_name)
 
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
@@ -197,12 +208,18 @@ class ProductionRun(models.Model):
     date_start = models.DateField()
     date_end = models.DateField()
 
+    def __str__(self):
+        return str(self.venue) + " (" + str(self.date_start.year) + "/" + str(self.date_start.month) + " through " + str(self.date_end.year) + "/" + str(self.date_end.month) + ")"
+
 class Performance(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    date_start = models.DateField(null=True)
-    date_end = models.DateField(null=True)
-    tour_venue = models.CharField(max_length=255, null=True, blank=True) # for encapsulating national tour information
+    date_start = models.DateField(null=True, blank=True)
+    date_end = models.DateField(null=True, blank=True)
+    tour_venue = models.CharField(max_length=255, blank=True) # for encapsulating national tour information
     associated_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
+    
+    def __str__(self):
+        return str(self.work) + " -- " + str(self.associated_production_run)
 
 class PerformanceCastMember(models.Model):
     performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
@@ -211,10 +228,16 @@ class PerformanceCastMember(models.Model):
     was_final_performance_for = models.BooleanField()
     was_first_performance_for = models.BooleanField()
 
+    def __str__(self):
+        return str(self.role)
+
 class PerformanceStaff(models.Model):
     performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     performance_staff_role = models.CharField(max_length=15, choices=[('director','Director'),('conductor','Conductor'),])
+
+    def __str__(self):
+        return str(self.performance_staff_role)
 
 class WorkScene(models.Model):
     associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -228,10 +251,10 @@ class WorkScene(models.Model):
 
 class GroupMembership(models.Model):
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
-    date_start = models.DateField()
-    date_start_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, blank=True, related_name='performance_joined_group') # if we don't know this info, there will be a dummy Show/Production/ProductionRun/Performance
-    date_end = models.DateField(blank=True)
-    date_end_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, blank=True, related_name='group_depart')
+    date_start = models.DateField(null=True, blank=True)
+    date_start_performance = models.ForeignKey(Performance, on_delete=models.SET_NULL, null=True, blank=True, related_name='performance_joined_group') # if we don't know this info, there will be a dummy Show/Production/ProductionRun/Performance
+    date_end = models.DateField(null=True, blank=True)
+    date_end_performance = models.ForeignKey(Performance, on_delete=models.SET_NULL, null=True, blank=True, related_name='group_depart')
     associated_group = models.ForeignKey(GroupEnum, on_delete=models.PROTECT)
     stage_gender_role = models.CharField(max_length=15, choices=StageGenderRole.choices, blank=True)
     troupe_role = models.CharField(max_length=15, choices=TroupeRole.choices, blank=True)
