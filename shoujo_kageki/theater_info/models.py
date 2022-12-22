@@ -8,6 +8,44 @@ class Language(models.TextChoices):
     ENGLISH = 'en-US','English'
     JAPANESE = 'ja-JP','日本語'
 
+class ProfileTextChoice(models.TextChoices):
+    BLOOD_TYPE = 'blood_type', _('Blood Type')
+    NICKNAME = 'nickname', _('Nickname')
+    FLOWER = 'flower', _('Favorite Flower')
+    FOOD = 'food', _('Favorite Food')
+    COLOR = 'color', _('Favorite Color')
+    HOBBY = 'hobby', _('Hobby')
+    COLLECTION = 'collection', _('Collection'),
+    TALENT = 'talent', _('Special Talent')
+    NAME_ORIGIN = 'name_origin', _('Origin of Stage Name')
+    ROLE = 'role', _('Favorite Role')
+    LIKE_TO_PLAY = 'like_to_play', _('Would Like to Try Playing')
+    TRIVIA = 'trivia', _('Trivia')
+
+class LinkTypeChoice(models.TextChoices):
+    INSTAGRAM = 'instagram', _('Instagram')
+    TWITTER = 'twitter', _('Twitter')
+    FANCLUB = 'fanclub', _('Official Fanclub')
+    BLOG = 'blog', _('Blog')
+    WEBSITE = 'website', _('Personal Website')
+    OTHER = 'other', _('Other')
+
+class StageGenderRole(models.TextChoices):
+    OTOKOYAKU = 'otokoyaku', _('Otokoyaku')
+    MUSUMEYAKU = 'musumeyaku', _('Musumeyaku')
+    BOTH = 'both', _('Both')
+    UNKNOWN = 'unknown', _('Unknown')
+
+class TroupeRole(models.TextChoices):
+    MEMBER = 'member', _('Member')
+    TOP_STAR = 'top_star', _('Top Star')
+    TOP_MUSUMEYAKU = 'top_musumeyaku', _('Top Musumeyaku')
+    NIBANTE = 'nibante', _('Nibante')
+    PRETOP_STAR = 'pretop_star', _('Star (Pre-Top Star System)')
+    KUMICHOU = 'kumichou', _('Kumichou')
+    FUKUKUMICHOU = 'fukukumichou', _('Vice Kumichou')
+    UNKNOWN = 'unknown', _('Unknown')
+
 # custom ENUM tables essentially #
 class GroupEnum(models.Model):
     enum = models.CharField(max_length=20) # GEN_STAFF, BOARD_MEMBER, HANA, TSUKI, YUKI, HOSHI, SORA, SENKA, OG, GUEST
@@ -39,19 +77,6 @@ class SourceMaterialEnum(models.Model):
     def __str__(self):
         return self.enum
 
-class ChangelogInfo(models.Model): 
-    pass
-    """ 
-    TODO: Look at some of the jazzband projects for this sort of thing, such as django-simple-history and django-auditlog.
-    editor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    publication_name = models.CharField(max_length=255)
-    publication_author = models.CharField(max_length=255, blank=True)
-    publication_year = models.DateField(blank=True)
-    publication_ISBN_ASIN = models.CharField(max_length=255, blank=True)
-    publication_URL = models.CharField(max_length=255, blank=True)
-    time_updated = models.DateTimeField()
-    fields_updated = no idea how to manage this one """
-
 class StageName(models.Model):
     name = models.CharField(max_length=255)
     reading = models.CharField(max_length=255)
@@ -81,30 +106,20 @@ class StaffMember(models.Model):
 
 class StaffProfileTextFields(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
-    profile_text_type = models.CharField(max_length=15, choices=[
-        ('blood_type','Blood Type'),
-        ('nickname','Nickname'),
-        ('flower','Favorite Flower'),
-        ('food','Favorite Food'),
-        ('color','Favorite Color'),
-        ('hobby','Hobby'),
-        ('collection','Collection'),
-        ('talent','Special Talent'),
-        ('name_origin','Origin of Stage Name'),
-        ('role','Favorite Role'),
-        ('like_to_play','Would Like to Try Playing'),
-        ('trivia','Trivia'),
-        ('social','Social Media/Website'),
-        ('other','Other'),
-    ], default='other')
-    original_text = models.CharField(max_length=255)
+    profile_text_choice = models.CharField(max_length=15, choices=ProfileTextChoice.choices)
+    original_text = models.TextField()
     is_in_Japanese = models.BooleanField(default='False')
-    is_current_data = models.BooleanField(default='True')
+    show_on_profile = models.BooleanField(default='True')
     source_material = models.CharField(max_length=255, default='Unknown')
     source_year = models.CharField(max_length=4, default='None')
 
     def __str__(self):
-        return self.profile_text_type
+        return str(self.profile_text_choice)
+
+class StaffProfileLink:
+    link_type = models.CharField(max_length=15, choices=LinkTypeChoice.choices)
+    if_link_type_is_other = models.CharField(max_length=255, blank=True)
+    url = models.CharField(max_length=255)
 
 class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)
@@ -170,10 +185,14 @@ class NamedRole(models.Model):
 class Production(models.Model): # View page
     works = models.ManyToManyField(Work)
     associated_groups = models.ManyToManyField(GroupEnum)
-    date_start = models.DateField()
+    date_start = models.DateField() #date fields are so ProductionCastMember can look at dates + group membership to autopopulate cast list
     date_end = models.DateField()
-    production_blurb = models.TextField()
-    
+    # some kind of way to add trivia
+
+class ProductionCastMember(models.Model):
+    production = models.ForeignKey(Production, on_delete=models.PROTECT)
+    stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
     venue = models.ForeignKey(VenueEnum, on_delete=models.PROTECT)
@@ -186,10 +205,12 @@ class Performance(models.Model):
     date_end = models.DateField(null=True)
     tour_venue = models.CharField(max_length=255, null=True, blank=True) # for encapsulating national tour information
     associated_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
+    was_final_performance_for = models.ManyToManyField(ProductionCastMember, related_name='taidansha')
+    was_first_performance_for = models.ManyToManyField(ProductionCastMember, related_name='hatsubutaisei')
 
 class PerformanceCastMember(models.Model):
     performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
-    stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+    production_cast_member = models.ForeignKey(ProductionCastMember, on_delete=models.PROTECT)
     role = models.ForeignKey(NamedRole, on_delete=models.PROTECT)
 
 class PerformanceStaff(models.Model):
@@ -210,11 +231,12 @@ class WorkScene(models.Model):
 class GroupMembership(models.Model):
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     date_start = models.DateField()
-    date_start_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, related_name='group_join') # if we don't know this info, there will be a dummy Show/Production/ProductionRun/Performance
-    date_end = models.DateField(null=True)
-    date_end_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, null=True, related_name='group_depart')
+    date_start_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, blank=True, related_name='performance_joined_group') # if we don't know this info, there will be a dummy Show/Production/ProductionRun/Performance
+    date_end = models.DateField(blank=True)
+    date_end_performance = models.ForeignKey(Performance, on_delete=models.PROTECT, blank=True, related_name='group_depart')
     associated_group = models.ForeignKey(GroupEnum, on_delete=models.PROTECT)
-    gender_role = models.CharField( max_length=15, choices=[('otokoyaku', 'otokoyaku'), ('musumeyaku', 'musumeyaku'), ('both', 'both'), ('not_applicable', 'not_applicable'),], default='not_applicable' )
+    stage_gender_role = models.CharField(max_length=15, choices=StageGenderRole.choices, blank=True)
+    troupe_role = models.CharField(max_length=15, choices=TroupeRole.choices, blank=True)
 
 """ TODO: 
  - Photos -- headshots for staff members and chirashi/header for exhibitions. Look into library options. Easy Thumbnails? 
