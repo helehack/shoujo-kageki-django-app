@@ -104,12 +104,12 @@ class StaffMember(models.Model):
     def __str__(self):
         return str(self.canonical_stage_name) + " (" + self.given_name + " " + self.given_name_romaji + ")" 
 
-class StaffProfileTextFields(models.Model):
+class StaffProfileTextField(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
     profile_text_choice = models.CharField(max_length=15, choices=ProfileTextChoice.choices)
-    original_text = models.TextField()
-    is_in_Japanese = models.BooleanField(default='False')
-    show_on_profile = models.BooleanField(default='True')
+    jp_text = models.CharField(max_length=255, blank=True)
+    en_text = models.CharField(max_length=255, blank=True)
+    show_on_profile = models.BooleanField(default=True)
     source_material = models.CharField(max_length=255, default='Unknown')
     source_year = models.CharField(max_length=4, default='None')
 
@@ -185,8 +185,6 @@ class NamedRole(models.Model):
 class Production(models.Model): # View page
     works = models.ManyToManyField(Work)
     associated_groups = models.ManyToManyField(GroupEnum)
-    date_start = models.DateField() #date fields are so ProductionCastMember can look at dates + group membership to autopopulate cast list
-    date_end = models.DateField()
     # some kind of way to add trivia
 
 class ProductionCastMember(models.Model):
@@ -205,13 +203,13 @@ class Performance(models.Model):
     date_end = models.DateField(null=True)
     tour_venue = models.CharField(max_length=255, null=True, blank=True) # for encapsulating national tour information
     associated_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
-    was_final_performance_for = models.ManyToManyField(ProductionCastMember, related_name='taidansha')
-    was_first_performance_for = models.ManyToManyField(ProductionCastMember, related_name='hatsubutaisei')
 
 class PerformanceCastMember(models.Model):
     performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
     production_cast_member = models.ForeignKey(ProductionCastMember, on_delete=models.PROTECT)
     role = models.ForeignKey(NamedRole, on_delete=models.PROTECT)
+    was_final_performance_for = models.BooleanField()
+    was_first_performance_for = models.BooleanField()
 
 class PerformanceStaff(models.Model):
     performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
