@@ -55,7 +55,7 @@ class WorkSceneInline(admin.StackedInline):
 
 class WorkAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Work Name Information (Japanese Please!)',{'fields':['name','reading','romaji']}),
+        ('Work Name Information',{'fields':['name','reading','romaji','en_name']}),
         ('Other Basic Information',{'fields':['parent_work','work_category','genre','trigger_warnings']}),
         ('Based on...',{'fields':['source_material_original_language','source_material_english_translation','source_author_original_language', 'source_author_english_transliteration', 'source_material_type']}),
     ]
@@ -65,25 +65,23 @@ class ProductionRunInline(admin.StackedInline):
     model = ProductionRun
     extra = 2
 
-class ProductionCastMemberInline(admin.StackedInline):
-    model = ProductionCastMember
-    extra = 1
-
-class PerformanceInline(admin.StackedInline):
-    model = Performance
+class ProductionCastInline(admin.StackedInline):
+    model = ProductionCast
     extra = 1
 
 class ProductionAdmin(admin.ModelAdmin):
-    inlines = [ProductionRunInline, ProductionCastMemberInline]
+    inlines = [ProductionRunInline, ProductionCastInline]
 
-class PerformanceStaffInline(admin.StackedInline):
-    model = PerformanceStaff
+class PerformanceCastStaffInline(admin.StackedInline):
+    model = PerformanceCastStaff
     extra = 1
-class PerformanceCastMemberInline(admin.StackedInline):
-    model = PerformanceCastMember
+
+class PerformanceCastPerformerInline(admin.StackedInline):
+    model = PerformanceCastPerformer
     extra = 1
-class PerformanceAdmin(admin.ModelAdmin):
-    inlines = [PerformanceStaffInline, PerformanceCastMemberInline]
+
+class ProductionRunAdmin(admin.ModelAdmin):
+    inlines = [PerformanceCastStaffInline, PerformanceCastPerformerInline]
 
 class EnumAdmin(admin.ModelAdmin):
     def has_module_permission(self, request):
@@ -93,5 +91,5 @@ admin.site.register(StageName, StageNameAdmin)
 admin.site.register(StaffMember, StaffMemberAdmin)
 admin.site.register(Work, WorkAdmin)
 admin.site.register(Production, ProductionAdmin)
-admin.site.register(Performance, PerformanceAdmin)
+admin.site.register(ProductionRun, ProductionRunAdmin)
 admin.site.register([GroupEnum, TriggerEnum, GenreEnum, VenueEnum, SourceMaterialEnum], EnumAdmin)

@@ -85,7 +85,12 @@ class StageName(models.Model):
         constraints = [ models.UniqueConstraint(fields=['surname_romaji', 'given_name_romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
     
     def __str__(self):
-        return (self.surname + self.given_name + " " + self.surname_romaji + " " + self.given_name_romaji)
+        return self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name 
+
+class MusicSchoolClass(models.Model):
+    class_number = models.SmallIntegerField()
+    hatsubutai_performances = models.ManyToManyField('theater_info.ProductionRun')
+    date_entered_school = models.DateField(null=True, blank=True)
 
 class StaffMember(models.Model):
     birthdate = models.DateField(null=True, blank=True) # TODO: Solve the bday problem. Break this out into year/mo/date fields?
@@ -100,9 +105,10 @@ class StaffMember(models.Model):
     given_name_reading = models.CharField(max_length=255, blank=True)
     given_name_romaji = models.CharField(max_length=255, blank=True)
     canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
+    graduating_class = models.ForeignKey(MusicSchoolClass, on_delete=models.PROTECT, null=True)
 
     def __str__(self):
-        return str(self.canonical_stage_name) + " (" + self.surname + self.given_name + " " + self.surname_romaji + " " + self.given_name_romaji + ")" 
+        return str(self.canonical_stage_name) + " ("  + self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name + ")" 
 
 class StaffProfileTextField(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
@@ -126,6 +132,7 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)
     reading = models.CharField(max_length=255)
     romaji = models.CharField(max_length=255)
+    en_name = models.CharField(max_length=255, blank=True)
     work_category = models.CharField(max_length=15, choices=[
         ('one_act', 'One-Act Play'),
         ('two_act', 'Two-Act Play'),
@@ -150,17 +157,18 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
     source_material_type = models.ManyToManyField(SourceMaterialEnum, blank=True)
 
     def __str__(self):
-        return self.name + " " + self.romaji
+        return self.name + " " + (self.en_name or self.romaji)
 
 class WorkStaff(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
     work_staff_role = models.CharField(max_length=15, choices=[
         ('writer', 'Writer'), ('choreographer', 'Choreographer'),('composer','Composer')
     ])
-    staff_stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+    staff_stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT, blank=True) #NOT_NULL placeholder guy
+    guest_staff_name = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
-        return str(self.staff_stage_name) + " (" + self.work_staff_role + ")"
+        return (self.guest_staff_name or str(self.staff_stage_name)) + " (" + self.work_staff_role + ")"
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -201,7 +209,7 @@ class Production(models.Model): # View page
         
         return works_str
 
-class ProductionCastMember(models.Model):
+class ProductionCast(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
 
@@ -217,33 +225,41 @@ class ProductionRun(models.Model):
     def __str__(self):
         return str(self.venue) + " (" + str(self.date_start.year) + "/" + str(self.date_start.month) + " through " + str(self.date_end.year) + "/" + str(self.date_end.month) + ")"
 
-class Performance(models.Model): #TODO: act 1/2 shinko casts??? 
-    work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    date_start = models.DateField(null=True, blank=True)
-    date_end = models.DateField(null=True, blank=True)
-    tour_venue = models.CharField(max_length=255, blank=True) # for encapsulating national tour information
-    associated_production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
-    
-    def __str__(self):
-        return str(self.work) + " -- " + str(self.associated_production_run)
+class TourLocation(models.Model):
+    production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
+    date = models.DateField(blank=True,null=True)
+    jp_custom_venue = models.CharField(max_length=255, blank=True)
+    en_custom_venue = models.CharField(max_length=255, blank=True)
 
-class PerformanceCastMember(models.Model):
-    performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
-    production_cast_member = models.ForeignKey(ProductionCastMember, on_delete=models.PROTECT)
-    role = models.ForeignKey(NamedRole, on_delete=models.PROTECT)
+class PerformanceCast(models.Model):
+    production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
+    work = models.ForeignKey(Work, on_delete=models.PROTECT)
+    production_cast_member = models.ForeignKey(ProductionCast, on_delete=models.PROTECT)
+    cast = models.CharField(max_length=15, choices=[
+        ('honkouen','Main Cast'), ('shinjinkouen', 'Newcomer Cast'), ('switch', 'Switch Cast')
+    ], default='honkouen')
+    date_start = models.DateField(blank=True) # model save method -- if blank get dates from productionrun
+    date_end = models.DateField(blank=True)
+    act = models.CharField(max_length=15, choices=[
+        ('all', 'All Act(s)'),('act1', 'Act 1 Only'),('act2','Act 2 Only')
+    ], default='all')
+
+    class Meta:
+        abstract = True
+
+class PerformanceCastPerformer(PerformanceCast):
+    performer_role = models.ForeignKey(NamedRole, on_delete=models.PROTECT)
     was_final_performance_for = models.BooleanField()
     was_first_performance_for = models.BooleanField()
 
     def __str__(self):
-        return str(self.role)
+        return str(self.performer_role) + " -- " + str(self.cast)
 
-class PerformanceStaff(models.Model):
-    performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
-    stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
-    performance_staff_role = models.CharField(max_length=15, choices=[('director','Director'),('conductor','Conductor'),])
+class PerformanceCastStaff(PerformanceCast):
+    staff_role = models.CharField(max_length=15, choices=[('director','Director'),('conductor','Conductor'),])
 
     def __str__(self):
-        return str(self.performance_staff_role)
+        return str(self.staff_role) + ' -- ' + str(self.cast)
 
 class WorkScene(models.Model):
     associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -258,9 +274,9 @@ class WorkScene(models.Model):
 class GroupMembership(models.Model):
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     date_start = models.DateField(null=True, blank=True)
-    date_start_performance = models.ForeignKey(Performance, on_delete=models.SET_NULL, null=True, blank=True, related_name='performance_joined_group') # if we don't know this info, there will be a dummy Show/Production/ProductionRun/Performance
+    first_production_run = models.ForeignKey(ProductionRun, on_delete=models.SET_NULL, null=True, blank=True, related_name='hatsubutai') # if we don't know this info, there will be a dummy Show/Production/ProductionRun/Performance
     date_end = models.DateField(null=True, blank=True)
-    date_end_performance = models.ForeignKey(Performance, on_delete=models.SET_NULL, null=True, blank=True, related_name='group_depart')
+    final_production_run = models.ForeignKey(ProductionRun, on_delete=models.SET_NULL, null=True, blank=True, related_name='taidan')
     associated_group = models.ForeignKey(GroupEnum, on_delete=models.PROTECT)
     stage_gender_role = models.CharField(max_length=15, choices=StageGenderRole.choices, blank=True)
     troupe_role = models.CharField(max_length=15, choices=TroupeRole.choices, blank=True)
