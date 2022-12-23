@@ -116,7 +116,8 @@ class StaffProfileTextField(models.Model):
     def __str__(self):
         return str(self.profile_text_choice)
 
-class StaffProfileLink:
+class StaffProfileLink(models.Model):
+    associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
     link_type = models.CharField(max_length=15, choices=LinkTypeChoice.choices)
     if_link_type_is_other = models.CharField(max_length=255, blank=True)
     url = models.CharField(max_length=255)
@@ -142,8 +143,10 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
     need to be able to display on a chart with previous versions, so need a field for NamedRole to correlate (parent_character) """
     trigger_warnings = models.ManyToManyField(TriggerEnum, blank=True)
     parent_work = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True)
-    source_material = models.CharField(max_length=255, blank=True)
-    source_author = models.CharField(max_length=255, blank=True)
+    source_material_original_language = models.CharField(max_length=255, blank=True)
+    source_material_english_translation = models.CharField(max_length=255, blank=True)
+    source_author_original_language = models.CharField(max_length=255, blank=True)
+    source_author_english_transliteration =  models.CharField(max_length=255, blank=True)
     source_material_type = models.ManyToManyField(SourceMaterialEnum, blank=True)
 
     def __str__(self):
@@ -155,6 +158,9 @@ class WorkStaff(models.Model):
         ('writer', 'Writer'), ('choreographer', 'Choreographer'),('composer','Composer')
     ])
     staff_stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return str(self.staff_stage_name) + " (" + self.work_staff_role + ")"
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -211,7 +217,7 @@ class ProductionRun(models.Model):
     def __str__(self):
         return str(self.venue) + " (" + str(self.date_start.year) + "/" + str(self.date_start.month) + " through " + str(self.date_end.year) + "/" + str(self.date_end.month) + ")"
 
-class Performance(models.Model):
+class Performance(models.Model): #TODO: act 1/2 shinko casts??? 
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
     date_start = models.DateField(null=True, blank=True)
     date_end = models.DateField(null=True, blank=True)

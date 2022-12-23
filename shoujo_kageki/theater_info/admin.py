@@ -24,6 +24,10 @@ class StaffProfileTextInline(admin.StackedInline):
     model = StaffProfileTextField
     extra = 1
 
+class StaffProfileLinkInline(admin.StackedInline):
+    model = StaffProfileLink
+    extra = 1
+
 class StaffMemberAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Vital Statistics (Please Input in Japanese)', {'fields': [
@@ -31,7 +35,7 @@ class StaffMemberAdmin(admin.ModelAdmin):
         ]}),
         ('Display Stage Name', {'fields': ['canonical_stage_name']})
     ]
-    inlines = [StaffProfileTextInline, StageNameInline]
+    inlines = [StaffProfileTextInline, StaffProfileLinkInline, StageNameInline]
 
 class WorkStaffInline(admin.StackedInline):
     model = WorkStaff
@@ -53,7 +57,7 @@ class WorkAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Work Name Information (Japanese Please!)',{'fields':['name','reading','romaji']}),
         ('Other Basic Information',{'fields':['parent_work','work_category','genre','trigger_warnings']}),
-        ('Based on...',{'fields':['source_material','source_author','source_material_type']}),
+        ('Based on...',{'fields':['source_material_original_language','source_material_english_translation','source_author_original_language', 'source_author_english_transliteration', 'source_material_type']}),
     ]
     inlines = [WorkStaffInline, WorkTextInline, NamedRoleInline, WorkSceneInline]
 
