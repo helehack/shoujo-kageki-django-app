@@ -3,6 +3,7 @@ from django.utils.timezone import get_current_timezone, make_aware, now
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.urls import reverse
 
 class Language(models.TextChoices):
     ENGLISH = 'en-US','English'
@@ -109,6 +110,15 @@ class StaffMember(models.Model):
 
     def __str__(self):
         return str(self.canonical_stage_name) + " ("  + self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name + ")" 
+
+    def get_absolute_url(self):
+        # if suffix
+        # then 'profile_wsuffix'
+        # + kwargs='suffix':self.canonical_stage_name.suffix
+        return reverse('profile', kwargs={
+                'surname_romaji':self.canonical_stage_name.surname_romaji,
+                'given_name_romaji':self.canonical_stage_name.given_name_romaji,
+            })
 
 class StaffProfileTextField(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
