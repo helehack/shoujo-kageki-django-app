@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block content %}
-    <h1 style="text-align:center;">{{ surname_romaji.capitalize }} {{ given_name_romaji.capitalize }}</h1>
+    {% with member=object stage_name=object.canonical_stage_name %}
+    <h1 class="text-center display-4">
+        {{ stage_name.surname_romaji }} {{ stage_name.given_name_romaji }}
+    </h1>
 
     {% if images %}
         <div class="staff-profile-images">
@@ -10,29 +13,36 @@
             {% endfor %}
         </div>
     {% endif %}
-    <div class="staff-profile-information">
-        <p><b>{% translate "Stage Name" %}:</b>
+        
+    <b>{% translate "Stage Name" %}:</b>
         {% if not jp_JP %}
-            {{ canonical_stage_name.surname_romaji }} {{ canonical_stage_name.given_name_romaji }}</p>
-        <p><b>{% translate "In Japanese" %}:</b>
+            {{ stage_name.surname_romaji }} {{ stage_name.given_name_romaji }}<br />
+        <b>{% translate "In Japanese" %}:</b>
         {% endif %}
-            {{ canonical_stage_name.surname }} {{ canonical_stage_name.given_name }} ({{ canonical_stage_name.surname_reading }} {{ canonical_stage_name.given_name_reading }})</p>
-        {% include "iterable_localized_title.html" with title="Nickname" items=nicknames %}
-        {% if staff_member.given_name %}
-        <p><b>{% translate "Real Name" %}:</b> {{ staff_member.surname }} {{ staff_member.given_name }} (
+        {{ stage_name.surname }} {{ stage_name.given_name }} 
+        ({{ stage_name.surname_reading }} {{ stage_name.given_name_reading }})
+    <br />
+    
+    {% include "iterable_localized_title.html" with title="Nickname" items=nicknames %}
+
+    {% if object.given_name %}
+        <b>{% translate "Real Name" %}:</b>
             {% if jp_JP%}
-                {{ staff_member.surname_reading }} {{ staff_member.given_name_reading }}
+                {{ member.surname }} {{ member.given_name }} ({{ member.surname_reading }} {{ member.given_name_reading }})
             {% else %}
-                {{ staff_member.surname_romaji }} {{ staff_member.given_name_romaji }}
+                {{ member.surname_romaji }} {{ member.given_name_romaji }} ({{ member.surname }} {{ member.given_name }})
             {% endif %}
-        )</p>
-        {% endif %}
-        {% if staff_member.birthday %}
-        {% endif %}
-        {% if staff_member.height %}
-        <p><b>{% translate "Height" %}:</b> {{ staff_member.height }}</p>
-        {% endif %}
-    </div>
+        <br />
+    {% endif %}
+
+    {% if member.birthdate %}
+        <b>{% translate "Birthdate" %}:</b> {{ member.birthdate}}<br />
+    {% endif %}
+
+    {% if member.height %}
+        <b>{% translate "Height" %}:</b> {{ member.height }}cm<br />
+    {% endif %}
+    {% endwith %}
 {% endblock content %}
 
 <!--

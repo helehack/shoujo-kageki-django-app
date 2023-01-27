@@ -116,6 +116,7 @@ class StaffMember(models.Model):
     given_name = models.CharField(max_length=255, blank=True)
     given_name_reading = models.CharField(max_length=255, blank=True)
     given_name_romaji = models.CharField(max_length=255, blank=True)
+    height = models.PositiveSmallIntegerField(validators=[MinValueValidator(100),MaxValueValidator(200)], null=True, blank=True)
     canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
     graduating_class = models.ForeignKey(MusicSchoolClass, on_delete=models.PROTECT, null=True)
 

@@ -27,8 +27,19 @@ class Group(IntEnum):
 class IndexView(TemplateView):
     template_name = "index.html"
 
-class ProfileView(TemplateView):
+class ProfileView(DetailView):
+    model=StaffMember
     template_name = "theater_info/profile.html"
+    
+    def get_object(self):
+        return StaffMember.objects.get(canonical_stage_name__surname_romaji=self.kwargs['surname_romaji'])
+
+
+class PerformerIndexView(TemplateView):
+    template_name = "theater_info/performer_index.html"
+
+class StaffIndexView(TemplateView):
+    template_name = "theater_info/staff_index.html"
 
 class StageNameList(ListView):
     model = StageName

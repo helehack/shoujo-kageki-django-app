@@ -14,9 +14,63 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock body_class %}">
-  {% block header %}{% endblock header %}
-  {% block precontent %}{% endblock precontent %}
+  {% block header %}
+  <nav class="navbar navbar-expand-lg" style="background-color: #e3f2fd;">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'index' %}">Home</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Performers
+            </a>
+            <ul class="dropdown-menu">
+              <li><span class="dropdown-item-text">Current Members</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'performer_every' 'current' %}">All Troupes</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'hana' 'current' %}">Flower</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'tsuki' 'current' %}">Moon</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'yuki' 'current' %}">Snow</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'hoshi' 'current' %}">Star</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'sora' 'current' %}">Cosmos</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'senka' 'current' %}">Senka</a></li>
+              <li><a class="dropdown-item  disabled" href="{% url 'performer_spec' 'ken1' 'current' %}">Unassigned</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'performer' %}">More Options</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Staff
+            </a>
+            <ul class="dropdown-menu">
+              <li><span class="dropdown-item-text">Current Staff</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'staff_every' 'current' %}">All</a></li>
+              <li><a class="dropdown-item" href="{% url 'staff_spec' 'director' 'current' %}">Directors</a></li>
+              <li><a class="dropdown-item" href="{% url 'staff_spec' 'choreographer' 'current' %}">Choreographers</a></li>
+              <li><a class="dropdown-item" href="{% url 'staff_spec' 'composer' 'current' %}">Composers</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'staff' %}">More Options</a></li>
+            </ul>
+          </li>
+        </ul>
+        <form class="d-flex" role="search">
+          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+  {% endblock header %}
+  {% block precontent %} <div class="container">{% endblock precontent %}
   {% block content %}{% endblock content %}
+  {% block postcontent %}</div>{% endblock postcontent %}
   {% block footer %}{% endblock footer %}
   {% block bootstrap_js %}
   <script

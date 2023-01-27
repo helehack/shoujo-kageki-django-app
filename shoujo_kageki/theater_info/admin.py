@@ -33,7 +33,7 @@ class StaffProfileLinkInline(admin.StackedInline):
 class StaffMemberAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Vital Statistics (Please Input in Japanese)', {'fields': [
-            'birthdate', 'deathdate', 'birth_country', 'birth_prefecture', 'birth_city', 'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji'
+            'birthdate', 'deathdate', 'birth_country', 'birth_prefecture', 'birth_city', 'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji', 'height'
         ]}),
         ('Display Stage Name', {'fields': ['canonical_stage_name']})
     ]
