@@ -72,6 +72,9 @@ class VenueEnum(AnyEnum):
 class SourceMaterialEnum(AnyEnum):
     pass
 
+class ListAsEnum(AnyEnum):
+    pass
+
 class StageName(models.Model):
     surname = models.CharField(max_length=255)
     surname_reading = models.CharField(max_length=255)
@@ -81,12 +84,20 @@ class StageName(models.Model):
     given_name_romaji = models.CharField(max_length=255)
     suffix = models.CharField(max_length=10, blank=True)
     associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT, null=True, blank=True)
+    list_as = models.ManyToManyField(ListAsEnum)
 
     class Meta:
         constraints = [ models.UniqueConstraint(fields=['surname_romaji', 'given_name_romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
     
     def __str__(self):
         return self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name 
+
+    def get_absolute_url(self):
+        # if suffix
+        # then 'profile_wsuffix'
+        # + kwargs='suffix':self.canonical_stage_name.suffix
+        if self.associated_staff_member:
+            return self.associated_staff_member.get_absolute_url()
 
 class MusicSchoolClass(models.Model):
     class_number = models.SmallIntegerField()
@@ -182,13 +193,13 @@ class WorkStaff(models.Model):
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    language = models.CharField(max_length=5, choices=Language.choices)
     text_type = models.CharField(max_length=15, choices=[
         ('plot_summary','Plot Summary'),
         ('trigger_info','Additional Trigger Information'),
         ('trivia','Trivia'),
     ])
-    text = models.TextField()
+    en_text = models.TextField()
+    jp_text = models.TextField()
 
 class NamedRole(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -197,7 +208,8 @@ class NamedRole(models.Model):
     jp_character_name = models.CharField(max_length=255, blank=True)
     character_name_reading = models.CharField(max_length=255, blank=True)
     character_name_romaji = models.CharField(max_length=255)
-    character_subtitle = models.TextField(null=True, blank=True)
+    en_character_subtitle = models.TextField(null=True, blank=True)
+    jp_character_subtitle = models.TextField(null=True, blank=True)
     parent_character = models.ForeignKey('self', on_delete=models.PROTECT, blank=True, null=True)
 
     def __str__(self):
@@ -222,9 +234,10 @@ class Production(models.Model): # View page
 class ProductionCast(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT)
 
     def __str__(self):
-        return str(self.stage_name)
+        return str(self.stage_name + ' -- ' + self.staff_role)
 
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
@@ -266,7 +279,7 @@ class PerformanceCastPerformer(PerformanceCast):
         return str(self.performer_role) + " -- " + str(self.cast)
 
 class PerformanceCastStaff(PerformanceCast):
-    staff_role = models.CharField(max_length=15, choices=[('director','Director'),('conductor','Conductor'),])
+    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT)
 
     def __str__(self):
         return str(self.staff_role) + ' -- ' + str(self.cast)

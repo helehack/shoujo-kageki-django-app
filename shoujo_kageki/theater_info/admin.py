@@ -12,7 +12,9 @@ class StageNameAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Name Information (Please Input in Japanese)', {'fields': [
             'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji', 'suffix'
-        ]})
+        ]}),
+        ('whomst', {'fields':['associated_staff_member']}),
+        ('List as', {'fields':['list_as']})
     ]
     inlines = [GroupMembershipInline]
 
@@ -92,4 +94,4 @@ admin.site.register(StaffMember, StaffMemberAdmin)
 admin.site.register(Work, WorkAdmin)
 admin.site.register(Production, ProductionAdmin)
 admin.site.register(ProductionRun, ProductionRunAdmin)
-admin.site.register([GroupEnum, TriggerEnum, GenreEnum, VenueEnum, SourceMaterialEnum], EnumAdmin)
+admin.site.register([GroupEnum, TriggerEnum, GenreEnum, VenueEnum, SourceMaterialEnum, ListAsEnum], EnumAdmin)

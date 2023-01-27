@@ -14,6 +14,7 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+VAR = BASE_DIR / "var"
 
 
 # Quick-start development settings - unsuitable for production
@@ -63,6 +64,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # add one for localized commas, quotes, etc
             ],
         },
     },
@@ -113,12 +115,47 @@ USE_I18N = True
 USE_TZ = False
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.1/howto/static-files/
-
-STATIC_URL = 'static/'
+# Static files (CSS, JavaScript, Images) and Media
+# https://docs.djangoproject.com/en/4.0/howto/static-files/
+STATIC_URL = "static/"
+STATIC_ROOT = VAR / "static"
+MEDIA_ROOT = VAR / "media"
+MEDIA_URL = "media/"
+if not STATIC_ROOT.exists():
+    STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+if not MEDIA_ROOT.exists():
+    MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#######################################################################
+# DEVELOPMENT: If running in a dev environment, loosen restrictions
+# and add debugging tools.
+#######################################################################
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+    # Use the basic storage with no manifest
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+    try:
+        import debug_toolbar
+
+        INSTALLED_APPS.append("debug_toolbar")
+        MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
+        INTERNAL_IPS = [
+            "127.0.0.1",
+        ]
+        # See also urls.py for debug_toolbar urls
+    except ImportError:
+        # Dev tools are optional
+        pass
+
+    try:
+        import django_extensions
+
+        INSTALLED_APPS.append("django_extensions")
+    except ImportError:
+        # Dev tools are optional
+        pass

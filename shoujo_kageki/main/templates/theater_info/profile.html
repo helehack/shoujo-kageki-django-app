@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block content %}
+    <h1 style="text-align:center;">{{ surname_romaji.capitalize }} {{ given_name_romaji.capitalize }}</h1>
+
+    {% if images %}
+        <div class="staff-profile-images">
+            {% for image in images %}
+                <img src="{{ image.src }}" alt="{{ image.alt_text }}" />
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="staff-profile-information">
+        <p><b>{% translate "Stage Name" %}:</b>
+        {% if not jp_JP %}
+            {{ canonical_stage_name.surname_romaji }} {{ canonical_stage_name.given_name_romaji }}</p>
+        <p><b>{% translate "In Japanese" %}:</b>
+        {% endif %}
+            {{ canonical_stage_name.surname }} {{ canonical_stage_name.given_name }} ({{ canonical_stage_name.surname_reading }} {{ canonical_stage_name.given_name_reading }})</p>
+        {% include "iterable_localized_title.html" with title="Nickname" items=nicknames %}
+        {% if staff_member.given_name %}
+        <p><b>{% translate "Real Name" %}:</b> {{ staff_member.surname }} {{ staff_member.given_name }} (
+            {% if jp_JP%}
+                {{ staff_member.surname_reading }} {{ staff_member.given_name_reading }}
+            {% else %}
+                {{ staff_member.surname_romaji }} {{ staff_member.given_name_romaji }}
+            {% endif %}
+        )</p>
+        {% endif %}
+        {% if staff_member.birthday %}
+        {% endif %}
+        {% if staff_member.height %}
+        <p><b>{% translate "Height" %}:</b> {{ staff_member.height }}</p>
+        {% endif %}
+    </div>
+{% endblock content %}
+
+<!--
+Current Troupe: n/a
+Role: Otokoyaku
+Status: Retired Top Star (1976 - 1981)
+
+Birthday: August 19, 1945
+Blood Type:
+Hometown: Sanda-shi, Hyogo
+Favorite Food:
+Favorite Flower: Rose
+Favorite Colors: White, brown, navy blue
+Hobbies: Travel
+Collections: Rings, accessories
+Special Talent:
+Origin of Stage Name:
+Favorite Role:
+Would Like to Try Playing: Zenigata Heiji (legendary policeman who catches criminals by throwing coins)
+
+Debut: 1963 (49th Class) Flower Poetry Anthology 1963
+Troupe History:
+1982 - 1988 Senka (theater)
+1976 - 1982 Moon Troupe
+1975 - 1976 Flower Troupe
+1964 - 1975 Moon Troupe
+-->
