@@ -7,6 +7,19 @@ from datetime import datetime
 from .models import *
 from enum import IntEnum
 
+def is_valid_year(n):
+    try:
+        float(n).is_integer()
+    except ValueError:
+        return False
+    else:
+        if float(n) in range(1913, 2023):
+            return True
+        
+        return False
+        
+            
+
 class ListAs(IntEnum):
     conductor = 5
     composer = 4
@@ -43,7 +56,7 @@ class StaffIndexView(TemplateView):
 
 class StageNameList(ListView):
     model = StageName
-    paginate_by = 20
+    paginate_by = 15
 
 class EveryStaffList(StageNameList):
     def get_queryset(self):
@@ -89,5 +102,11 @@ class SpecificGroupList(StageNameList):
                 Q(groupmembership__date_end=None)|Q(groupmembership__date_end__gte=datetime.today()),
                 groupmembership__associated_group=Group[self.kwargs['troupe']] 
             )
+
+        # if is_valid_year(self.kwargs['when']):
+        #     qs = qs.filter(
+        #         Q(groupmembership__date_end=None)|Q(groupmembership__date_end__gte=datetime.today()),
+        #         groupmembership__associated_group=Group[self.kwargs['troupe']] 
+        #     )
 
         return qs

@@ -2,7 +2,10 @@
 {% load i18n %}
 
 {% block content %}
-    <h1 class="text-center display-4">Contextual Title Here</h1>
+{% with kwargs=request.resolver_match.kwargs %}
+    <h1 class="text-center display-4">
+        {{ kwargs.when.capitalize }} {{ kwargs.troupe.capitalize }}{{ kwargs.staff_type.capitalize }}
+    </h1>
 
     {% if object_list %}
     <ul class="list-group list-group-flush">
@@ -25,5 +28,6 @@
             <li class="page-item"><a class="page-link{% if page_obj.has_next %}" href="?page={{ page_obj.next_page_number }}{% else %} disabled{% endif %}">&raquo;</a></li>
         </ul>
     </nav>
+{% endwith %}
 {% endblock %}
 

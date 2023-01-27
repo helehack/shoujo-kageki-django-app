@@ -13,7 +13,9 @@
             {% endfor %}
         </div>
     {% endif %}
-        
+    
+    <div class="p-1 bg-info bg-gradient text-center"><b>Standard Profile Information</b></div>
+
     <b>{% translate "Stage Name" %}:</b>
         {% if not jp_JP %}
             {{ stage_name.surname_romaji }} {{ stage_name.given_name_romaji }}<br />
@@ -23,7 +25,9 @@
         ({{ stage_name.surname_reading }} {{ stage_name.given_name_reading }})
     <br />
     
-    {% include "iterable_localized_title.html" with title="Nickname" items=nicknames %}
+    {% if member.nickname %}
+        <b>{% translate "Nickname" %}:</b> {{ member.nickname }}<br />
+    {% endif %}
 
     {% if object.given_name %}
         <b>{% translate "Real Name" %}:</b>
