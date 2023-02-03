@@ -75,30 +75,6 @@ class SourceMaterialEnum(AnyEnum):
 class ListAsEnum(AnyEnum):
     pass
 
-class StageName(models.Model):
-    surname = models.CharField(max_length=255)
-    surname_reading = models.CharField(max_length=255)
-    surname_romaji = models.CharField(max_length=255)
-    given_name = models.CharField(max_length=255)
-    given_name_reading = models.CharField(max_length=255)
-    given_name_romaji = models.CharField(max_length=255)
-    suffix = models.CharField(max_length=10, blank=True)
-    associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT, null=True, blank=True)
-    list_as = models.ManyToManyField(ListAsEnum)
-
-    class Meta:
-        constraints = [ models.UniqueConstraint(fields=['surname_romaji', 'given_name_romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
-    
-    def __str__(self):
-        return self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name 
-
-    def get_absolute_url(self):
-        # if suffix
-        # then 'profile_wsuffix'
-        # + kwargs='suffix':self.canonical_stage_name.suffix
-        if self.associated_staff_member:
-            return self.associated_staff_member.get_absolute_url()
-
 class MusicSchoolClass(models.Model):
     class_number = models.SmallIntegerField()
     hatsubutai_performances = models.ManyToManyField('theater_info.ProductionRun')
@@ -117,20 +93,27 @@ class StaffMember(models.Model):
     given_name_reading = models.CharField(max_length=255, blank=True)
     given_name_romaji = models.CharField(max_length=255, blank=True)
     height = models.PositiveSmallIntegerField(validators=[MinValueValidator(100),MaxValueValidator(200)], null=True, blank=True)
-    canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
     graduating_class = models.ForeignKey(MusicSchoolClass, on_delete=models.PROTECT, null=True)
+
+    @property
+    def canonical_stage_name(self):
+        return self.stagename_set.get(is_canonical=True)
 
     def __str__(self):
         return str(self.canonical_stage_name) + " ("  + self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name + ")" 
 
     def get_absolute_url(self):
-        # if suffix
-        # then 'profile_wsuffix'
-        # + kwargs='suffix':self.canonical_stage_name.suffix
-        return reverse('profile', kwargs={
+        view='profile'
+        kwargs={
                 'surname_romaji':self.canonical_stage_name.surname_romaji,
                 'given_name_romaji':self.canonical_stage_name.given_name_romaji,
-            })
+            }
+        
+        if self.canonical_stage_name.suffix:
+            view+='_wsuffix'
+            kwargs['suffix']=self.canonical_stage_name.suffix
+        
+        return reverse(view, kwargs=kwargs)
 
 class StaffProfileTextField(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
@@ -149,6 +132,40 @@ class StaffProfileLink(models.Model):
     link_type = models.CharField(max_length=15, choices=LinkTypeChoice.choices)
     if_link_type_is_other = models.CharField(max_length=255, blank=True)
     url = models.CharField(max_length=255)
+
+class StageName(models.Model):
+    surname = models.CharField(max_length=255)
+    surname_reading = models.CharField(max_length=255)
+    surname_romaji = models.CharField(max_length=255)
+    given_name = models.CharField(max_length=255)
+    given_name_reading = models.CharField(max_length=255)
+    given_name_romaji = models.CharField(max_length=255)
+    suffix = models.CharField(max_length=10, blank=True)
+    associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT, null=True, blank=True)
+    is_canonical = models.BooleanField(default=True)
+    list_as = models.ManyToManyField(ListAsEnum)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['surname_romaji', 'given_name_romaji', 'suffix'],
+                name='unique_name_url_slug'
+            ),
+            models.UniqueConstraint(
+                fields=['associated_staff_member'],
+                condition=models.Q(is_canonical=True),
+                name='unique_canonical_for_staff'
+            )
+        ]
+    
+    def __str__(self):
+        return self.surname_romaji + " " + self.given_name_romaji + " " + self.suffix + " " + self.surname + self.given_name
+
+    def get_absolute_url(self):
+        if self.associated_staff_member:
+            return self.associated_staff_member.get_absolute_url()
+
+        return "fix_your_shit"
 
 class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)

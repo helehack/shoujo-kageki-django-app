@@ -13,7 +13,7 @@ class StageNameAdmin(admin.ModelAdmin):
         ('Name Information (Please Input in Japanese)', {'fields': [
             'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji', 'suffix'
         ]}),
-        ('whomst', {'fields':['associated_staff_member']}),
+        ('whomst', {'fields':['associated_staff_member', 'is_canonical']}),
         ('List as', {'fields':['list_as']})
     ]
     inlines = [GroupMembershipInline]
@@ -34,8 +34,7 @@ class StaffMemberAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Vital Statistics (Please Input in Japanese)', {'fields': [
             'birthdate', 'deathdate', 'birth_country', 'birth_prefecture', 'birth_city', 'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji', 'height'
-        ]}),
-        ('Display Stage Name', {'fields': ['canonical_stage_name']})
+        ]})
     ]
     inlines = [StaffProfileTextInline, StaffProfileLinkInline, StageNameInline]
 

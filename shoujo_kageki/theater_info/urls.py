@@ -4,8 +4,9 @@ from django.urls import include, path
 from . import views
 
 urlpatterns = [
-    path('profile/<str:surname_romaji>_<str:given_name_romaji>_<str:suffix>', views.IndexView.as_view(), name='profile_wsuffix'),
+    path('profile/<str:surname_romaji>_<str:given_name_romaji>_<str:suffix>', views.ProfileView.as_view(), name='profile_wsuffix'),
     path('profile/<str:surname_romaji>_<str:given_name_romaji>', views.ProfileView.as_view(), name='profile'),
+    path('disambig/<str:surname_romaji>_<str:given_name_romaji>', views.ProfileDisambiguationList.as_view(), name='profile_disambiguation'),
     path('performer/<str:troupe>/<str:when>', views.SpecificGroupList.as_view(), name='performer_spec'),
     path('performer/<str:when>', views.EveryGroupList.as_view(), name='performer_every'),
     path('performer', views.PerformerIndexView.as_view(), name='performer'),
