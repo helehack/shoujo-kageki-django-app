@@ -73,7 +73,9 @@ class ProfileView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["stagenames"] = self.object.stagename_set.all()
-        context["role_list"] = PerformanceCastPerformer.objects.filter(production_cast_member__stage_name__in=context["stagenames"])
+        context["rolelist"] = PerformanceCastPerformer.objects.filter(production_cast_member__stage_name__in=context["stagenames"])
+        context["perfstafflist"] = PerformanceCastStaff.objects.filter(production_cast_member__stage_name__in=context["stagenames"])
+        context["workstafflist"] = WorkStaff.objects.filter(staff_stage_name__in=context["stagenames"])
         return context
 
 class ProfileDisambiguationList(ListView):

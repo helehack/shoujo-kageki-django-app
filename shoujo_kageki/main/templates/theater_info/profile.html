@@ -44,7 +44,7 @@
         <b>{% translate "Nickname" %}:</b> {{ member.nickname }}<br />
     {% endif %}
 
-    {% if object.given_name %}
+    {% if member.given_name %}
         <b>{% translate "Real Name" %}:</b>
             {% if jp_JP%}
                 {{ member.surname }} {{ member.given_name }} ({{ member.surname_reading }} {{ member.given_name_reading }})
@@ -74,10 +74,21 @@
         {% endfor %}
     {% endif %}
     <br />
-    <div class="p-1 bg-info bg-gradient text-center"><b>Roles</b></div>
-    {% for role in role_list %}
-        <b>{{ role.date_start.year }}:</b> <a href={{ role.production_run.production.get_absolute_url }}>{{ role.work }}</a>, {{ role.performer_role }}
+    {% if rolelist %}
+        <div class="p-1 bg-info bg-gradient text-center"><b>Roles</b></div>
+        {% for role in rolelist %}
+            <b>{{ role.date_start.year }}:</b> <a href={{ role.production_run.production.get_absolute_url }}>{{ role.work }}</a>, {{ role.performer_role }}
+        {% endfor %}
+    {% endif %}
+    {% if perfstafflist or workstafflist %}
+    <div class="p-1 bg-info bg-gradient text-center"><b>Staff Credits</b></div>
+    {% for credit in workstafflist %}
+        {% firstof credit.work_staff_role credit.staff_role %} {{ credit.work }}<br />
     {% endfor %}
+    {% for credit in perfstafflist %}
+        {% firstof credit.staff_role %} {{ credit.work }}<br />
+    {% endfor %}
+    {% endif %}
     {% endwith %}
 {% endblock content %}
 
