@@ -13,7 +13,8 @@ class StageNameAdmin(admin.ModelAdmin):
         ('Name Information (Please Input in Japanese)', {'fields': [
             'surname', 'surname_reading', 'surname_romaji', 'given_name', 'given_name_reading', 'given_name_romaji', 'suffix'
         ]}),
-        ('whomst', {'fields':['associated_staff_member', 'is_canonical']}),
+        ('Alternative Kanji (same reading):', {'fields':['alt_surname_kanji','alt_given_name_kanji']}),
+        ('Staff Member', {'fields':['associated_staff_member', 'is_canonical']}),
         ('List as', {'fields':['list_as']})
     ]
     inlines = [GroupMembershipInline]

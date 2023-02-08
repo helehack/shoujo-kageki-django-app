@@ -124,6 +124,15 @@ class StaffProfileTextField(models.Model):
     source_material = models.CharField(max_length=255, default='Unknown')
     source_year = models.CharField(max_length=4, default='None')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['associated_staff_member','profile_text_choice'],
+                condition=models.Q(show_on_profile=True),
+                name='unique_shown_text_choice'
+            )
+        ]
+
     def __str__(self):
         return str(self.profile_text_choice)
 
@@ -141,6 +150,8 @@ class StageName(models.Model):
     given_name_reading = models.CharField(max_length=255)
     given_name_romaji = models.CharField(max_length=255)
     suffix = models.CharField(max_length=10, blank=True)
+    alt_surname_kanji = models.CharField(max_length=255, blank=True)
+    alt_given_name_kanji = models.CharField(max_length=255, blank=True)
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT, null=True, blank=True)
     is_canonical = models.BooleanField(default=True)
     list_as = models.ManyToManyField(ListAsEnum)
@@ -158,6 +169,12 @@ class StageName(models.Model):
             )
         ]
     
+    def save(self, *args, **kwargs):
+        if not self.associated_staff_member:
+            self.associated_staff_member = StaffMember.objects.create()
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.surname_romaji + " " + self.given_name_romaji + " " + self.suffix + " " + self.surname + self.given_name
 
@@ -252,10 +269,14 @@ class Production(models.Model): # View page
 class ProductionCast(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
-    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT)
+    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT, default=1) # FIXME
 
     def __str__(self):
-        return str(self.stage_name + ' -- ' + self.staff_role)
+        return str(self.stage_name) + ' -- ' + str(self.staff_role)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.stage_name.list_as.add(self.staff_role)
 
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)

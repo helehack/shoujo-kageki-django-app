@@ -24,7 +24,22 @@
         {{ stage_name.surname }} {{ stage_name.given_name }} 
         ({{ stage_name.surname_reading }} {{ stage_name.given_name_reading }})
     <br />
-    
+    {% comment %} {% if member.stagename_set.all.count > 1 or name in member.stagename_set.all has alternative kanji %} {% endcomment %}
+        <b>{% translate "Also Known By" %}:</b>
+        {% for alt_name in stagenames %}
+            {% if not alt_name.is_canonical %}
+                {{ alt_name.surname_romaji }} {{ alt_name.given_name_romaji }} ({{ alt_name.surname }} {{ alt_name.given_name }})
+            {% endif %}
+            {% if alt_name.alt_surname_kanji or alt_name.alt_given_name_kanji %}
+                {{ alt_name.surname_romaji }} {{ alt_name.given_name_romaji }}
+                (
+                {% firstof alt_name.alt_surname_kanji alt_name.surname %} {% firstof alt_name.alt_given_name_kanji alt_name.given_name %}
+                )
+            {% endif %}
+        {% endfor %}
+        </br>
+    {% comment %} {% endif %} {% endcomment %}
+        
     {% if member.nickname %}
         <b>{% translate "Nickname" %}:</b> {{ member.nickname }}<br />
     {% endif %}
@@ -42,10 +57,27 @@
     {% if member.birthdate %}
         <b>{% translate "Birthdate" %}:</b> {{ member.birthdate}}<br />
     {% endif %}
+    
+    {% if member.deathdate %}
+        <b>{% translate "Deathdate" %}:</b> {{ member.deathdate }}<br />
+    {% endif %}
 
     {% if member.height %}
         <b>{% translate "Height" %}:</b> {{ member.height }}cm<br />
     {% endif %}
+
+    {% if member.staffprofiletextfield_set %}
+        {% for field in member.staffprofiletextfield_set.all %}
+            {% if field.show_on_profile %}
+            <b>{{ field.profile_text_choice }}:</b> {% firstof field.en_text field.jp_text %}</br>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    <br />
+    <div class="p-1 bg-info bg-gradient text-center"><b>Roles</b></div>
+    {% for role in role_list %}
+        <b>{{ role.date_start.year }}:</b> <a href={{ role.production_run.production.get_absolute_url }}>{{ role.work }}</a>, {{ role.performer_role }}
+    {% endfor %}
     {% endwith %}
 {% endblock content %}
 

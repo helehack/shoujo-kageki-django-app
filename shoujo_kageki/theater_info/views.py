@@ -70,6 +70,12 @@ class ProfileView(DetailView):
             stagename__given_name_romaji=self.kwargs['given_name_romaji'],
         )
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["stagenames"] = self.object.stagename_set.all()
+        context["role_list"] = PerformanceCastPerformer.objects.filter(production_cast_member__stage_name__in=context["stagenames"])
+        return context
+
 class ProfileDisambiguationList(ListView):
     model = StageName
 
