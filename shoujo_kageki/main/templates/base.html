@@ -1,0 +1,84 @@
+<!DOCTYPE html>{% load i18n static %}
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}{% endblock %}</title>
+  <meta name="description" content="" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  {% block bootstrap_styles %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+  integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx"
+  crossorigin="anonymous">
+  {% endblock bootstrap_styles %}
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock body_class %}">
+  {% block header %}
+  <nav class="navbar navbar-expand-lg" style="background-color: #e3f2fd;">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'index' %}">Home</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Performers
+            </a>
+            <ul class="dropdown-menu">
+              <li><span class="dropdown-item-text">Current Members</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'performer_every' 'current' %}">All Troupes</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'hana' 'current' %}">Flower</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'tsuki' 'current' %}">Moon</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'yuki' 'current' %}">Snow</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'hoshi' 'current' %}">Star</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'sora' 'current' %}">Cosmos</a></li>
+              <li><a class="dropdown-item" href="{% url 'performer_spec' 'senka' 'current' %}">Senka</a></li>
+              <li><a class="dropdown-item  disabled" href="{% url 'performer_spec' 'ken1' 'current' %}">Unassigned</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'performer' %}">More Options &raquo;</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Staff
+            </a>
+            <ul class="dropdown-menu">
+              <li><span class="dropdown-item-text">Current Staff</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'staff_every' 'current' %}">All</a></li>
+              <li><a class="dropdown-item" href="{% url 'staff_spec' 'director' 'current' %}">Directors</a></li>
+              <li><a class="dropdown-item" href="{% url 'staff_spec' 'choreographer' 'current' %}">Choreographers</a></li>
+              <li><a class="dropdown-item" href="{% url 'staff_spec' 'composer' 'current' %}">Composers</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'staff' %}">More Options &raquo;</a></li>
+            </ul>
+          </li>
+        </ul>
+        <form class="d-flex" role="search">
+          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+  {% endblock header %}
+  {% block precontent %} <div class="container">{% endblock precontent %}
+  {% block content %}{% endblock content %}
+  {% block postcontent %}</div>{% endblock postcontent %}
+  {% block footer %}{% endblock footer %}
+  {% block bootstrap_js %}
+  <script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+  crossorigin="anonymous">
+  </script>
+  {% endblock bootstrap_js %}
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

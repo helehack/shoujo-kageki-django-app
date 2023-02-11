@@ -3,6 +3,7 @@ from django.utils.timezone import get_current_timezone, make_aware, now
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.urls import reverse
 
 class Language(models.TextChoices):
     ENGLISH = 'en-US','English'
@@ -71,21 +72,8 @@ class VenueEnum(AnyEnum):
 class SourceMaterialEnum(AnyEnum):
     pass
 
-class StageName(models.Model):
-    surname = models.CharField(max_length=255)
-    surname_reading = models.CharField(max_length=255)
-    surname_romaji = models.CharField(max_length=255)
-    given_name = models.CharField(max_length=255)
-    given_name_reading = models.CharField(max_length=255)
-    given_name_romaji = models.CharField(max_length=255)
-    suffix = models.CharField(max_length=10, blank=True)
-    associated_staff_member = models.ForeignKey('theater_info.StaffMember', on_delete=models.PROTECT, null=True, blank=True)
-
-    class Meta:
-        constraints = [ models.UniqueConstraint(fields=['surname_romaji', 'given_name_romaji', 'suffix'], name='Combination of romaji reading and suffix should be unique as it will be used as a URL slug.') ]
-    
-    def __str__(self):
-        return self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name 
+class ListAsEnum(AnyEnum):
+    pass
 
 class MusicSchoolClass(models.Model):
     class_number = models.SmallIntegerField()
@@ -104,11 +92,28 @@ class StaffMember(models.Model):
     given_name = models.CharField(max_length=255, blank=True)
     given_name_reading = models.CharField(max_length=255, blank=True)
     given_name_romaji = models.CharField(max_length=255, blank=True)
-    canonical_stage_name = models.OneToOneField(StageName, on_delete=models.PROTECT)
+    height = models.PositiveSmallIntegerField(validators=[MinValueValidator(100),MaxValueValidator(200)], null=True, blank=True)
     graduating_class = models.ForeignKey(MusicSchoolClass, on_delete=models.PROTECT, null=True)
+
+    @property
+    def canonical_stage_name(self):
+        return self.stagename_set.get(is_canonical=True)
 
     def __str__(self):
         return str(self.canonical_stage_name) + " ("  + self.surname_romaji + " " + self.given_name_romaji + " " + self.surname + self.given_name + ")" 
+
+    def get_absolute_url(self):
+        view='profile'
+        kwargs={
+                'surname_romaji':self.canonical_stage_name.surname_romaji,
+                'given_name_romaji':self.canonical_stage_name.given_name_romaji,
+            }
+        
+        if self.canonical_stage_name.suffix:
+            view+='_wsuffix'
+            kwargs['suffix']=self.canonical_stage_name.suffix
+        
+        return reverse(view, kwargs=kwargs)
 
 class StaffProfileTextField(models.Model):
     associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT)
@@ -119,6 +124,15 @@ class StaffProfileTextField(models.Model):
     source_material = models.CharField(max_length=255, default='Unknown')
     source_year = models.CharField(max_length=4, default='None')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['associated_staff_member','profile_text_choice'],
+                condition=models.Q(show_on_profile=True),
+                name='unique_shown_text_choice'
+            )
+        ]
+
     def __str__(self):
         return str(self.profile_text_choice)
 
@@ -127,6 +141,48 @@ class StaffProfileLink(models.Model):
     link_type = models.CharField(max_length=15, choices=LinkTypeChoice.choices)
     if_link_type_is_other = models.CharField(max_length=255, blank=True)
     url = models.CharField(max_length=255)
+
+class StageName(models.Model):
+    surname = models.CharField(max_length=255)
+    surname_reading = models.CharField(max_length=255)
+    surname_romaji = models.CharField(max_length=255)
+    given_name = models.CharField(max_length=255)
+    given_name_reading = models.CharField(max_length=255)
+    given_name_romaji = models.CharField(max_length=255)
+    suffix = models.CharField(max_length=10, blank=True)
+    alt_surname_kanji = models.CharField(max_length=255, blank=True)
+    alt_given_name_kanji = models.CharField(max_length=255, blank=True)
+    associated_staff_member = models.ForeignKey(StaffMember, on_delete=models.PROTECT, null=True, blank=True)
+    is_canonical = models.BooleanField(default=True)
+    list_as = models.ManyToManyField(ListAsEnum)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['surname_romaji', 'given_name_romaji', 'suffix'],
+                name='unique_name_url_slug'
+            ),
+            models.UniqueConstraint(
+                fields=['associated_staff_member'],
+                condition=models.Q(is_canonical=True),
+                name='unique_canonical_for_staff'
+            )
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.associated_staff_member:
+            self.associated_staff_member = StaffMember.objects.create()
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.surname_romaji + " " + self.given_name_romaji + " " + self.suffix + " " + self.surname + self.given_name
+
+    def get_absolute_url(self):
+        if self.associated_staff_member:
+            return self.associated_staff_member.get_absolute_url()
+
+        return "fix_your_shit"
 
 class Work(models.Model): # I wish Sakuhin had a better English equivilant
     name = models.CharField(max_length=255)
@@ -172,13 +228,13 @@ class WorkStaff(models.Model):
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    language = models.CharField(max_length=5, choices=Language.choices)
     text_type = models.CharField(max_length=15, choices=[
         ('plot_summary','Plot Summary'),
         ('trigger_info','Additional Trigger Information'),
         ('trivia','Trivia'),
     ])
-    text = models.TextField()
+    en_text = models.TextField()
+    jp_text = models.TextField()
 
 class NamedRole(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -187,7 +243,8 @@ class NamedRole(models.Model):
     jp_character_name = models.CharField(max_length=255, blank=True)
     character_name_reading = models.CharField(max_length=255, blank=True)
     character_name_romaji = models.CharField(max_length=255)
-    character_subtitle = models.TextField(null=True, blank=True)
+    en_character_subtitle = models.TextField(null=True, blank=True)
+    jp_character_subtitle = models.TextField(null=True, blank=True)
     parent_character = models.ForeignKey('self', on_delete=models.PROTECT, blank=True, null=True)
 
     def __str__(self):
@@ -212,9 +269,14 @@ class Production(models.Model): # View page
 class ProductionCast(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
     stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
+    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT, default=1) # FIXME
 
     def __str__(self):
-        return str(self.stage_name)
+        return str(self.stage_name) + ' -- ' + str(self.staff_role)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.stage_name.list_as.add(self.staff_role)
 
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
@@ -256,7 +318,7 @@ class PerformanceCastPerformer(PerformanceCast):
         return str(self.performer_role) + " -- " + str(self.cast)
 
 class PerformanceCastStaff(PerformanceCast):
-    staff_role = models.CharField(max_length=15, choices=[('director','Director'),('conductor','Conductor'),])
+    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT)
 
     def __str__(self):
         return str(self.staff_role) + ' -- ' + str(self.cast)
