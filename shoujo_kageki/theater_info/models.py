@@ -4,6 +4,15 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
+from enum import IntEnum
+
+class ListAs(IntEnum):
+    writer = 6
+    conductor = 5
+    composer = 4
+    choreographer = 3
+    director = 2
+    performer = 1
 
 class Language(models.TextChoices):
     ENGLISH = 'en-US','English'
@@ -41,7 +50,6 @@ class TroupeRole(models.TextChoices):
     MEMBER = 'member', _('Member')
     TOP_STAR = 'top_star', _('Top Star')
     TOP_MUSUMEYAKU = 'top_musumeyaku', _('Top Musumeyaku')
-    NIBANTE = 'nibante', _('Nibante')
     PRETOP_STAR = 'pretop_star', _('Star (Pre-Top Star System)')
     KUMICHOU = 'kumichou', _('Kumichou')
     FUKUKUMICHOU = 'fukukumichou', _('Vice Kumichou')
@@ -217,14 +225,16 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
 
 class WorkStaff(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    work_staff_role = models.CharField(max_length=15, choices=[
-        ('writer', 'Writer'), ('choreographer', 'Choreographer'),('composer','Composer')
-    ])
-    staff_stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT, blank=True) #NOT_NULL placeholder guy
+    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT)
+    stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT, blank=True) #NOT_NULL placeholder guy
     guest_staff_name = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
-        return (self.guest_staff_name or str(self.staff_stage_name)) + " (" + self.work_staff_role + ")"
+        return (self.guest_staff_name or str(self.stage_name)) + " (" + str(self.staff_role) + ")"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.stage_name.list_as.add(self.staff_role)
 
 class WorkTextField(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -266,18 +276,6 @@ class Production(models.Model): # View page
         
         return works_str
 
-class ProductionCast(models.Model):
-    production = models.ForeignKey(Production, on_delete=models.PROTECT)
-    stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
-    staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT, default=1) # FIXME
-
-    def __str__(self):
-        return str(self.stage_name) + ' -- ' + str(self.staff_role)
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.stage_name.list_as.add(self.staff_role)
-
 class ProductionRun(models.Model):
     production = models.ForeignKey(Production, on_delete=models.PROTECT)
     venue = models.ForeignKey(VenueEnum, on_delete=models.PROTECT)
@@ -296,7 +294,7 @@ class TourLocation(models.Model):
 class PerformanceCast(models.Model):
     production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
-    production_cast_member = models.ForeignKey(ProductionCast, on_delete=models.PROTECT)
+    stage_name = models.ForeignKey(StageName, on_delete=models.PROTECT)
     cast = models.CharField(max_length=15, choices=[
         ('honkouen','Main Cast'), ('shinjinkouen', 'Newcomer Cast'), ('switch', 'Switch Cast')
     ], default='honkouen')
@@ -316,12 +314,20 @@ class PerformanceCastPerformer(PerformanceCast):
 
     def __str__(self):
         return str(self.performer_role) + " -- " + str(self.cast)
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.stage_name.list_as.add(ListAs.performer)
 
 class PerformanceCastStaff(PerformanceCast):
     staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT)
 
     def __str__(self):
         return str(self.staff_role) + ' -- ' + str(self.cast)
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.stage_name.list_as.add(self.staff_role)
 
 class WorkScene(models.Model):
     associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)
