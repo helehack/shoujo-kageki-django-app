@@ -6,6 +6,15 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from enum import IntEnum
 
+class Group(IntEnum):
+    ken1 = 8
+    staff = 7
+    senka = 6
+    sora = 5
+    hoshi = 4
+    yuki = 3
+    tsuki = 2
+    hana = 1
 class ListAs(IntEnum):
     writer = 6
     conductor = 5
@@ -222,6 +231,18 @@ class Work(models.Model): # I wish Sakuhin had a better English equivilant
 
     def __str__(self):
         return self.name + " " + (self.en_name or self.romaji)
+    
+    def save(self, *args, **kwargs):
+        exists = bool(self.id)
+        super().save(*args, **kwargs)
+        
+        if not exists:
+            self.namedrole_set.add(NamedRole(
+                work = self,
+                jp_character_name = '',
+                character_name_reading = '',
+                character_name_romaji = 'Unspecified',
+            ), bulk=False)
 
 class WorkStaff(models.Model):
     work = models.ForeignKey(Work, on_delete=models.PROTECT)
@@ -285,6 +306,8 @@ class ProductionRun(models.Model):
     def __str__(self):
         return str(self.venue) + " (" + str(self.date_start.year) + "/" + str(self.date_start.month) + " through " + str(self.date_end.year) + "/" + str(self.date_end.month) + ")"
 
+
+
 class TourLocation(models.Model):
     production_run = models.ForeignKey(ProductionRun, on_delete=models.PROTECT)
     date = models.DateField(blank=True,null=True)
@@ -307,6 +330,13 @@ class PerformanceCast(models.Model):
     class Meta:
         abstract = True
 
+    def save(self, *args, **kwargs):
+        if not self.date_start and not self.date_end:
+            self.date_start = self.production_run.date_start
+            self.date_end = self.production_run.date_end
+
+        super().save(*args, **kwargs)
+
 class PerformanceCastPerformer(PerformanceCast):
     performer_role = models.ForeignKey(NamedRole, on_delete=models.PROTECT)
     was_final_performance_for = models.BooleanField()
@@ -319,6 +349,28 @@ class PerformanceCastPerformer(PerformanceCast):
         super().save(*args, **kwargs)
         self.stage_name.list_as.add(ListAs.performer)
 
+    def clone(self, new_production_run:ProductionRun):
+        # This logic doesn't go here; it goes in the bulk function I haven't written yet.
+        #
+        # if (
+        #     self.was_final_performance_for and
+        #     new_production_run.date_start > self.production_run.date_end
+        # ) or self.was_first_performance_for:
+        #     return
+        
+        return PerformanceCastPerformer(
+            production_run = new_production_run,
+            work = self.work,
+            stage_name = self.stage_name,
+            cast = self.cast,
+            date_start = new_production_run.date_start,
+            date_end = new_production_run.date_end,
+            act = self.act,
+            performer_role = self.performer_role,
+            was_final_performance_for = False,
+            was_first_performance_for = False
+        )
+
 class PerformanceCastStaff(PerformanceCast):
     staff_role = models.ForeignKey(ListAsEnum, on_delete=models.PROTECT)
 
@@ -328,6 +380,19 @@ class PerformanceCastStaff(PerformanceCast):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.stage_name.list_as.add(self.staff_role)
+
+    def clone(self, new_production_run:ProductionRun):
+
+        return PerformanceCastStaff(
+            production_run = new_production_run,
+            work = self.work,
+            stage_name = self.stage_name,
+            cast = self.cast,
+            date_start = new_production_run.date_start,
+            date_end = new_production_run.date_end,
+            act = self.act,
+            staff_role = self.staff_role
+        )
 
 class WorkScene(models.Model):
     associated_work = models.ForeignKey(Work, on_delete=models.PROTECT)

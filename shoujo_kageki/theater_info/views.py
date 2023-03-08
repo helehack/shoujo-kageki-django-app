@@ -19,16 +19,6 @@ def is_valid_year(n):
         
         return False
 
-class Group(IntEnum):
-    ken1 = 8
-    staff = 7
-    senka = 6
-    sora = 5
-    hoshi = 4
-    yuki = 3
-    tsuki = 2
-    hana = 1
-
 class IndexView(TemplateView):
     template_name = "index.html"
 
