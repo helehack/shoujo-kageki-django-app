@@ -67,12 +67,8 @@ class ProductionRunInline(admin.StackedInline):
     model = ProductionRun
     extra = 2
 
-class ProductionCastInline(admin.StackedInline):
-    model = ProductionCast
-    extra = 1
-
 class ProductionAdmin(admin.ModelAdmin):
-    inlines = [ProductionRunInline, ProductionCastInline]
+    inlines = [ProductionRunInline]
 
 class PerformanceCastStaffInline(admin.StackedInline):
     model = PerformanceCastStaff

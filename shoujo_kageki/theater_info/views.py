@@ -5,7 +5,6 @@ from django.views.generic import TemplateView, ListView, DetailView
 from django.db.models import Q
 from datetime import datetime
 from .models import *
-from enum import IntEnum
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect
 
@@ -19,26 +18,6 @@ def is_valid_year(n):
             return True
         
         return False
-        
-            
-
-class ListAs(IntEnum):
-    writer = 6
-    conductor = 5
-    composer = 4
-    choreographer = 3
-    director = 2
-    performer = 1
-
-class Group(IntEnum):
-    ken1 = 8
-    staff = 7
-    senka = 6
-    sora = 5
-    hoshi = 4
-    yuki = 3
-    tsuki = 2
-    hana = 1
 
 class IndexView(TemplateView):
     template_name = "index.html"
